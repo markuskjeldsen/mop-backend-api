@@ -25,7 +25,9 @@ RUN apk add --no-cache sqlite-libs
 # Copy compiled binary and other necessary files
 COPY --from=build /app/mop-backend-api /app/
 COPY .env /app/
-COPY data.db /app/
+COPY migrate /app/migrate              
+COPY entrypoint.sh /app/
+RUN chmod +x /app/entrypoint.sh
 
 # Expose port (default Gin port, change if needed)
 EXPOSE 8080
@@ -34,4 +36,4 @@ EXPOSE 8080
 ENV GIN_MODE=release
 
 # Command to run your application
-CMD ["./mop-backend-api"]
+CMD ["/app/entrypoint.sh"]
