@@ -1,5 +1,10 @@
 # besøg backend
 
+## how to run
+
+podman build -t dai-api .
+podman run -p 8080:8080 --env-file .env localhost/dai-api:latest
+
 ## vision
 
 En hjemmeside til konsulent rapport
