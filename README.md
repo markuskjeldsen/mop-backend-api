@@ -40,6 +40,11 @@ register
 
 ## currently
 
+### Fix deployment
+
+podman
+automated deployment
+
 besøgs form
 
 ## future
