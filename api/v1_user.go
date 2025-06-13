@@ -1,0 +1,216 @@
+package api
+
+import (
+	"fmt"
+	"net/http"
+	"os"
+	"time"
+
+	"github.com/golang-jwt/jwt/v4"
+
+	"github.com/gin-gonic/gin"
+	"github.com/markuskjeldsen/mop-backend-api/initializers"
+	"github.com/markuskjeldsen/mop-backend-api/models"
+	"golang.org/x/crypto/bcrypt"
+)
+
+func Hello(c *gin.Context) {
+	c.JSON(200, gin.H{
+		"message": "Hello to the API!",
+	})
+}
+
+func GetUser(c *gin.Context) {
+	user, _ := getVerifyUser(c)
+	//var user []models.User
+	initializers.DB.Preload("Visits").Find(&user, user.ID) // Preload visits for each user
+	user.Password = ""                                     // Remove password from the response
+
+	c.JSON(200, gin.H{
+		"user": user,
+	})
+}
+
+func GetUsers(c *gin.Context) {
+	var user []models.User
+	initializers.DB.Preload("Visits").Find(&user) // Preload visits for each user
+	for i := range user {
+		user[i].Password = "" // Remove password from the response
+	}
+
+	c.JSON(200, gin.H{
+		"users": user,
+	})
+}
+
+func CreateUser(c *gin.Context) {
+	// get data
+	var user models.User
+	var body struct {
+		Username string `json:"username" form:"name" binding:"required"`
+		Password string `json:"password" form:"password" binding:"required"`
+		Email    string `json:"email" form:"email"`
+	}
+
+	// bind the data to the user var
+	datatype := c.ContentType()
+
+	if datatype == "application/json" {
+		if err := c.Bind(&body); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"Status": "ERROR could not bind",
+				"user_structure": map[string]string{
+					"username": "string",
+					"password": "string",
+				},
+				"error": err.Error(),
+			})
+			return
+		}
+	} else if datatype == "application/x-www-form-urlencoded" {
+		if err := c.ShouldBind(&body); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"Status": "ERROR could not bind",
+				"user_structure": map[string]string{
+					"username": "string",
+					"password": "string",
+				},
+				"error": err.Error(),
+			})
+			return
+		}
+	}
+
+	hash, err := bcrypt.GenerateFromPassword([]byte(body.Password), 10)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status": "Error with Database",
+			"error":  err.Error(),
+		})
+		return
+	}
+
+	user.Username = body.Username
+	user.Email = body.Email
+
+	user.Password = string(hash)
+
+	result := initializers.DB.Create(&user)
+	if result.Error != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status": "Error with Database",
+			"error":  result.Error.Error(),
+		})
+		return
+	}
+
+	if datatype == "application/json" {
+		c.JSON(http.StatusOK, gin.H{
+			"message": "sucessfully created new user",
+			"user":    user,
+		})
+	} else if datatype == "application/x-www-form-urlencoded" {
+		c.Redirect(http.StatusFound, "/")
+		c.Set("message", "created new user, head to login to login and see your profile")
+	}
+}
+
+func Login(c *gin.Context) {
+	// bind the data from req
+	var body struct {
+		Username string `json:"username" form:"username" binding:"required"`
+		Password string `json:"password" form:"password" binding:"required"`
+	}
+
+	datatype := c.ContentType()
+	fmt.Println("Content-Type:", datatype)
+	// bind the data to the user var
+	if datatype == "application/json" {
+		if err := c.ShouldBindJSON(&body); err != nil { //before it was c.Bind
+			c.JSON(http.StatusBadRequest, gin.H{
+				"Status": "ERROR could not bind",
+				"user_structure": map[string]string{
+					"username": "string",
+					"password": "string",
+				},
+				"error": err.Error(),
+			})
+			return
+		}
+	} else if datatype == "application/x-www-form-urlencoded" {
+		if err := c.ShouldBind(&body); err != nil { //before it was c.Bind
+			c.JSON(http.StatusBadRequest, gin.H{
+				"Status": "ERROR could not bind",
+				"error":  err.Error(),
+			})
+			return
+		}
+	} else {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"Status": "ERROR could not bind",
+			"error":  "Content-Type not supported",
+		})
+		return
+	}
+
+	var user models.User
+	fmt.Println("Username:", body.Username)
+	initializers.DB.First(&user, "username = ?", body.Username)
+	if user.ID == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "ERROR could find user",
+		})
+		return
+	}
+	err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(body.Password))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"Status": "ERROR",
+			"error":  err.Error(),
+		})
+		return
+	}
+
+	// generate JWT token
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"sub": user.ID,
+		"exp": time.Now().Add(time.Hour * 24 * 7).Unix(),
+	})
+
+	tokenString, err := token.SignedString([]byte(os.Getenv("JWT_secret")))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"Status": "failed to create token",
+			"error":  err.Error(),
+		})
+		return
+	}
+
+	if os.Getenv("PRODUCTION") == "true" {
+		c.SetCookie("Authorization", tokenString, 3600*24*7, "", "", true, true) // should be true, true in prod
+		c.SetSameSite(http.SameSiteStrictMode)
+	} else {
+		//           name            value         age     path domain secure, httpOnly
+		c.SetCookie("Authorization", tokenString, 3600*17, "", "", false, true) // should be true, true in prod
+		c.SetSameSite(http.SameSiteLaxMode)
+	}
+	if datatype == "application/json" {
+		// return JWT token
+		c.JSON(http.StatusOK, gin.H{
+			"token":   tokenString, //type tokenString if important
+			"message": "sucessfully logged in",
+			"user":    user,
+		})
+	} else if datatype == "application/x-www-form-urlencoded" {
+		c.Redirect(http.StatusFound, "/profile")
+	}
+}
+
+func Logout(c *gin.Context) {
+	// remove the cookie
+	c.SetCookie("Authorization", "", -1, "", "", false, true)
+	c.JSON(http.StatusOK, gin.H{
+		"message": "sucessfully logged out",
+	})
+}
