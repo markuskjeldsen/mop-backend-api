@@ -24,7 +24,15 @@ func main() {
 	r.SetTrustedProxies(nil)
 
 	r.GET("/", func(c *gin.Context) { c.Status(200) }) // Health check route
-	apiv1 := r.Group("/api/v1")                        // Grouping routes under /api/v1
+	r.GET("/routes", func(c *gin.Context) {            // to check
+		endpoints := []string{}
+		for _, route := range r.Routes() {
+			endpoints = append(endpoints, route.Method+":"+route.Path)
+		}
+		c.JSON(200, endpoints)
+	})
+
+	apiv1 := r.Group("/api/v1") // Grouping routes under /api/v1
 	{
 		apiv1.GET("/", api.Hello)                                      // Adding a route to the group
 		apiv1.GET("/users", middleware.RequireAuthAdmin, api.GetUsers) // Adding a route to the group

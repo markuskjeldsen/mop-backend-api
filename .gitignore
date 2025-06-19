@@ -1,3 +1,6 @@
 /.env
 /data.db
 /mop-backend-api.exe
+*.exe*
+*.sh
+*mop-backend-api*

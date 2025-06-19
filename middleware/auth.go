@@ -19,6 +19,7 @@ func RequireAuthUser(c *gin.Context) {
 	tokenString, err := c.Cookie("Authorization")
 
 	if err != nil || tokenString == "" {
+		fmt.Println("There is no token")
 		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 			"error": "No token provided",
 		})
@@ -38,6 +39,7 @@ func RequireAuthUser(c *gin.Context) {
 	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
 		// check exp
 		if float64(time.Now().Unix()) > claims["exp"].(float64) {
+			fmt.Println("The token is too old")
 			c.AbortWithStatus(http.StatusUnauthorized)
 		}
 		//find user with token
@@ -47,6 +49,7 @@ func RequireAuthUser(c *gin.Context) {
 		var user models.User
 		initializers.DB.First(&user, claims["sub"])
 		if user.ID == 0 {
+			fmt.Println("The token does not belong to any user")
 			c.AbortWithStatus(http.StatusUnauthorized)
 		}
 
@@ -63,6 +66,7 @@ func RequireAuthAdmin(c *gin.Context) {
 		return
 	}
 	if tokenString == "" {
+		fmt.Println("There is no token")
 		c.AbortWithStatus(http.StatusUnauthorized)
 		return
 	}
