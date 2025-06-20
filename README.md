@@ -30,7 +30,7 @@ konsulent besøger hjemmeside
 logger ind
 kigger på sin dag og besøg
 klikker på den første og åbner en questionaire som er adaptiv
-trykker send, hvor både data og tidspunkt og person placering bliver sendt med
+trykker send, hvor både data og tidspunkt og person-placering bliver sendt med,
 trykker videre på næste sag og gentager
 
 admin besøger hjemmesiden
@@ -49,6 +49,8 @@ register
 
 podman
 automated deployment
+
+### Add functionanility
 
 besøgs form
 

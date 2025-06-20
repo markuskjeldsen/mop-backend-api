@@ -23,8 +23,8 @@ func Hello(c *gin.Context) {
 func GetUser(c *gin.Context) {
 	user, _ := getVerifyUser(c)
 	//var user []models.User
-	initializers.DB.Preload("Visits").Find(&user, user.ID) // Preload visits for each user
-	user.Password = ""                                     // Remove password from the response
+	initializers.DB.Find(&user, user.ID) // Preload visits for each user
+	user.Password = ""                   // Remove password from the response
 
 	c.JSON(200, gin.H{
 		"user": user,
@@ -213,4 +213,42 @@ func Logout(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"message": "sucessfully logged out",
 	})
+}
+
+func Patch(c *gin.Context) {
+	var userPatch struct {
+		ID       uint   `json:"ID"`
+		Username string `json:"username,omitempty"`
+		Password string `json:"password,omitempty"`
+		Rights   string `json:"rights,omitempty"`
+		Email    string `json:"email,omitempty"`
+		Phone    string `json:"phone,omitempty"`
+	}
+
+	var user models.User
+
+	// Bind the JSON to userin
+	if err := c.ShouldBindBodyWithJSON(&userPatch); err != nil {
+		c.JSON(400, gin.H{"error": "Invalid input"})
+		return
+	}
+
+	// Find the user by ID
+	if err := initializers.DB.First(&user, userPatch.ID).Error; err != nil {
+		c.JSON(404, gin.H{"error": "User not found"})
+		return
+	}
+
+	//only allow updating chosen fields
+	updates := map[string]interface{}{
+		"Email": userPatch.Email,
+		"Phone": userPatch.Phone,
+	}
+
+	// Update the user fields
+	if err := initializers.DB.Model(&user).Updates(updates).Error; err != nil {
+		c.JSON(500, gin.H{"error": "Failed to update user"})
+		return
+	}
+	c.JSON(200, user)
 }

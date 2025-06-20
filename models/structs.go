@@ -30,6 +30,7 @@ const (
 	RightsAdmin     UserRights = "admin"
 	RightsDeveloper UserRights = "developer"
 	RightsUser      UserRights = "user"
+	RightsNone      UserRights = "none"
 )
 
 type CivilStatus string
@@ -40,24 +41,54 @@ const (
 	Cohabiting CivilStatus = "Cohabiting"
 )
 
+type Gender string
+
+const (
+	Male   Gender = "Male"
+	Female Gender = "Female"
+	Other  Gender = "Other"
+)
+
+type Risk string
+
+const (
+	Low    Risk = "Low"
+	Medium Risk = "Medium"
+	High   Risk = "High"
+)
+
 // models/models.go
 type User struct {
 	gorm.Model
-	Username       string          `json:"username" binding:"required" gorm:"not null"`
-	Password       string          `json:"password" binding:"required" gorm:"not null"`
-	Rights         UserRights      `json:"rights" gorm:"default:user"` // user, admin, developer
-	Email          string          `json:"email"`
-	Phone          string          `json:"phone"`
-	Visits         []Visit         `json:"visits" gorm:"foreignKey:UserID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
-	VisitResponses []VisitResponse `json:"visit_responses" gorm:"foreignKey:UserID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
+	Username string     `json:"username" binding:"required" gorm:"not null"`
+	Password string     `json:"password" binding:"required" gorm:"not null"`
+	Rights   UserRights `json:"rights" gorm:"default:user"` // user, admin, developer
+	Email    string     `json:"email"`
+	Phone    string     `json:"phone"`
+	Visits   []Visit    `json:"visits" gorm:"foreignKey:UserID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
+}
+
+type Debitor struct {
+	gorm.Model
+	Name             string    `json:"name" gorm:"not null"`
+	Phone            string    `json:"phone"`
+	PhoneWork        string    `json:"phone_work"`
+	Email            string    `json:"email"`
+	Gender           Gender    `json:"gender" gorm:"not null"` // Male, Female, Other
+	Birthday         time.Time `json:"birthday"`
+	AdvoproDebitorId int       `json:"Advopro_debitor_id"`
+	Risk             Risk      `json:"risk"` // Low, Medium, High
+	SSN              string    `json:"ssn"`
+
+	Notes string `string:"notes"`
+
+	Visits []Visit `gorm:"many2many:visit_debitors;"`
 }
 
 type Visit struct {
 	gorm.Model
 	UserID        uint      `json:"user_id"`
 	Address       string    `json:"address"`
-	DebitorName   string    `json:"debitor_name"`
-	DebitorPhone  string    `json:"debitor_phone"`
 	Latitude      string    `json:"latitude"`
 	Longitude     string    `json:"longitude"`
 	Notes         string    `json:"notes"`
@@ -66,18 +97,20 @@ type Visit struct {
 	VisitTime     string    `json:"visit_time"`
 	VisitInterval string    `json:"visit_interval"`
 	Visited       bool      `json:"visited"`
+
+	Debitors      []Debitor      `json:"debitors" gorm:"many2many:visit_debitors;"`
+	VisitResponse *VisitResponse `json:"visit_response" gorm:"foreignKey:VisitID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
 }
 
 type VisitResponse struct {
 	gorm.Model
-	UserID  uint `json:"user_id" gorm:"not null"`
-	VisitID uint `json:"visit_id" binding:"required" gorm:"not null"`
+	VisitID uint `json:"visit_id" binding:"required" gorm:"not null;unique"`
 
 	// actual data
-	ActDate time.Time `json:"actual_date"`
-	ActTime string    `json:"actual_time"`
-	ActLat  string    `json:"actual_latitude"`
-	ActLong string    `json:"actual_longitude"`
+	ActDate time.Time `json:"actual_date" binding:"required"`
+	ActTime string    `json:"actual_time" binding:"required"`
+	ActLat  string    `json:"actual_latitude" binding:"required"`
+	ActLong string    `json:"actual_longitude" binding:"required"`
 
 	// response data
 	DebitorIsHome   bool `json:"debitor_is_home"`

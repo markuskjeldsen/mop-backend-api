@@ -38,13 +38,17 @@ func main() {
 		apiv1.GET("/", api.Hello)                                      // Adding a route to the group
 		apiv1.GET("/users", middleware.RequireAuthAdmin, api.GetUsers) // Adding a route to the group
 		apiv1.GET("/user", middleware.RequireAuthUser, api.GetUser)    // Adding a route to the group
+		apiv1.PATCH("/user", middleware.RequireAuthUser, api.Patch)
+
 		apiv1.POST("/register", middleware.RequireAuthAdmin, api.CreateUser)
 		apiv1.POST("/login", api.Login)
 		apiv1.POST("/logout", middleware.RequireAuthUser, api.Logout)
 
-		apiv1.GET("/visit_responses", middleware.RequireAuthUser, api.Visit_responses)
-		apiv1.GET("/visits", middleware.RequireAuthUser, api.GetVisits)        // Adding a route to the group
-		apiv1.GET("/verifytoken", middleware.RequireAuthUser, api.Verifytoken) // Adding a route to the group
+		apiv1.GET("/visit_responses", middleware.RequireAuthUser, api.Visit_responses)  // get all the responses
+		apiv1.POST("/visit_responses", middleware.RequireAuthUser, api.Create_response) // make a response
+		apiv1.GET("/visits", middleware.RequireAuthUser, api.GetVisits)
+		apiv1.GET("/verifytoken", middleware.RequireAuthUser, api.Verifytoken)
+
 	}
 
 	port := os.Getenv("PORT")
