@@ -59,3 +59,5 @@ besøgs form
 Hvis konsulenten har tjekket at bilen er skadet så skal han også vedhæfte et billede
 
 typer af besøg (anmeldt) (uanmeldt genbesøg: indenfor 10 dage af seneste anmeldte besøg) (anmeldt genbesøg)
+
+self host nominatim for long og lattitude

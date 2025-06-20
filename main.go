@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"os"
 
 	"github.com/gin-gonic/gin"
@@ -17,6 +18,22 @@ func init() {
 }
 
 func main() {
+	//test()
+	start_server()
+
+}
+
+func test() {
+	server := "MOPSRV01\\SQL1"
+	database := "AdvoPro"
+	results, err := api.ExecuteQuery(server, database, 636004)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Printf("%v\n", results)
+}
+
+func start_server() {
 	fmt.Println("Starting server...")
 
 	r := gin.New() // was gin.Default()
@@ -62,5 +79,4 @@ func main() {
 	} else {
 		fmt.Printf("Server has closed\n")
 	}
-
 }
