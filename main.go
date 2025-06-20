@@ -18,6 +18,7 @@ func init() {
 
 func main() {
 	fmt.Println("Starting server...")
+
 	r := gin.New() // was gin.Default()
 	r.Use(middleware.RequestLogger())
 	r.Use(middleware.CORSMiddleware)
@@ -50,6 +51,7 @@ func main() {
 	if port == "" {
 		port = "8000"
 	}
+	fmt.Println("ALLOW_ORIGIN:", os.Getenv("ALLOW_ORIGIN"))
 	fmt.Printf("Server is running on port %s\n", port)
 	if err := r.Run(":" + port); err != nil {
 		fmt.Printf("Server error: %v\n", err)
