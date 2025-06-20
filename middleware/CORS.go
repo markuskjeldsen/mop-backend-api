@@ -9,9 +9,9 @@ import (
 func CORSMiddleware(c *gin.Context) {
 	// Set CORS headers
 	if os.Getenv("PRODUCTION") == "true" {
-		c.Writer.Header().Set("Access-Control-Allow-Origin", os.Getenv("ALLOW-ORIGIN")) // Change "*" to specific origin if needed
+		c.Writer.Header().Set("Access-Control-Allow-Origin", os.Getenv("ALLOW-ORIGIN")) // Change to specific origin if needed
 	} else {
-		c.Writer.Header().Set("Access-Control-Allow-Origin", "http://192.168.1.17:5137") // Change "*" to specific origin if needed
+		c.Writer.Header().Set("Access-Control-Allow-Origin", "http://localhost:5137")
 	}
 
 	c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
