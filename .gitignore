@@ -4,3 +4,4 @@
 *.exe*
 *.sh
 *mop-backend-api*
+static

@@ -24,9 +24,7 @@ func main() {
 }
 
 func test() {
-	server := "MOPSRV01\\SQL1"
-	database := "AdvoPro"
-	results, err := api.ExecuteQuery(server, database, 636004)
+	results, err := initializers.ExecuteQuery(initializers.Server, initializers.AdvoPro, initializers.StatusFemQuery)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -41,18 +39,9 @@ func start_server() {
 	r.Use(middleware.CORSMiddleware)
 	r.SetTrustedProxies(nil)
 
-	r.GET("/", func(c *gin.Context) { c.Status(200) }) // Health check route
-	r.GET("/routes", func(c *gin.Context) {            // to check
-		endpoints := []string{}
-		for _, route := range r.Routes() {
-			endpoints = append(endpoints, route.Method+":"+route.Path)
-		}
-		c.JSON(200, endpoints)
-	})
-
 	apiv1 := r.Group("/api/v1") // Grouping routes under /api/v1
 	{
-		apiv1.GET("/", api.Hello)                                      // Adding a route to the group
+		apiv1.GET("/health", api.Hello)                                // Adding a route to the group
 		apiv1.GET("/users", middleware.RequireAuthAdmin, api.GetUsers) // Adding a route to the group
 		apiv1.GET("/user", middleware.RequireAuthUser, api.GetUser)    // Adding a route to the group
 		apiv1.PATCH("/user", middleware.RequireAuthUser, api.Patch)
@@ -66,7 +55,17 @@ func start_server() {
 		apiv1.GET("/visits", middleware.RequireAuthUser, api.GetVisits)
 		apiv1.GET("/verifytoken", middleware.RequireAuthUser, api.Verifytoken)
 
+		apiv1.GET("/visits/AvailableVisit", middleware.RequireAuthAdmin, api.AvailableVisitCreation)
+		apiv1.POST("/visits/create", middleware.RequireAuthAdmin, api.VisitCreation)
 	}
+
+	r.StaticFile("/", "./static/index.html")
+	r.StaticFile("/favicon-dark.ico", "./static/favicon-dark.ico")
+	r.StaticFile("/favicon-light.ico", "./static/favicon-light.ico")
+	r.Static("/assets", "./static/assets/")
+	r.NoRoute(func(c *gin.Context) {
+		c.File("./static/index.html")
+	})
 
 	port := os.Getenv("PORT")
 	if port == "" {

@@ -80,10 +80,15 @@ type Debitor struct {
 	Risk             Risk      `json:"risk"` // Low, Medium, High
 	SSN              string    `json:"ssn"`
 
-	Notes string `string:"notes"`
+	Notes string `json:"notes"`
 
 	Visits []Visit `gorm:"many2many:visit_debitors;"`
 }
+
+// skal jeg lave en tabel som hedder sager
+// også have debitorer knyttet til en sag?
+// eller vil vi gerne have mulighed for at kunne besøge kun en debitor
+// skal jeg så have forlobid med.
 
 type Visit struct {
 	gorm.Model
