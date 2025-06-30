@@ -89,20 +89,35 @@ type Debitor struct {
 // også have debitorer knyttet til en sag?
 // eller vil vi gerne have mulighed for at kunne besøge kun en debitor
 // skal jeg så have forlobid med.
+type VisitStatus struct {
+	gorm.Model
+	Text        string `json:"text"`
+	Description string `json:"description"`
+}
+
+type VisitStatusLog struct {
+	gorm.Model
+	VisitID     uint      `json:"visit_id" gorm:"not null"`
+	OldStatusID uint      `json:"old_status_id"`
+	NewStatusID uint      `json:"new_status_id"`
+	ChangedAt   time.Time `json:"changed_at" gorm:"autoCreateTime"`
+	ChangedByID uint      `json:"changed_by_id"` // Optionally, reference User.ID
+}
 
 type Visit struct {
 	gorm.Model
-	UserID        uint      `json:"user_id"`
-	Address       string    `json:"address"`
-	Latitude      string    `json:"latitude"`
-	Longitude     string    `json:"longitude"`
-	Notes         string    `json:"notes"`
-	Sagsnr        uint      `json:"sagsnr"`
-	VistDate      time.Time `json:"visit_date"`
-	VisitTime     string    `json:"visit_time"`
-	VisitInterval string    `json:"visit_interval"`
-	Visited       bool      `json:"visited"`
-
+	UserID        uint           `json:"user_id"`
+	Address       string         `json:"address"`
+	Latitude      string         `json:"latitude"`
+	Longitude     string         `json:"longitude"`
+	Notes         string         `json:"notes"`
+	Sagsnr        uint           `json:"sagsnr"`
+	VistDate      time.Time      `json:"visit_date"`
+	VisitTime     string         `json:"visit_time"`
+	VisitInterval string         `json:"visit_interval"`
+	Visited       bool           `json:"visited"`
+	StatusID      uint           `json:"status_id" gorm:"not null;default:1"` // <-- Add this
+	Status        VisitStatus    `json:"status"`                              // <-- Keep this for relation
 	Debitors      []Debitor      `json:"debitors" gorm:"many2many:visit_debitors;"`
 	VisitResponse *VisitResponse `json:"visit_response" gorm:"foreignKey:VisitID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
 }

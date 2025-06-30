@@ -30,7 +30,13 @@ func main() {
 	initializers.DB.AutoMigrate(&models.Debitor{})       // debitors
 	initializers.DB.AutoMigrate(&models.Visit{})         // visits (references debitors with many2many)
 	initializers.DB.AutoMigrate(&models.VisitResponse{}) // visit_responses
-	initializers.DB.AutoMigrate(&models.Visit{}, &models.VisitResponse{})
+	initializers.DB.AutoMigrate(&models.Visit{}, &models.VisitResponse{}, &models.VisitStatus{})
+
+	initializers.DB.Create(&status1)
+	initializers.DB.Create(&status2)
+	initializers.DB.Create(&status3)
+	initializers.DB.Create(&status4)
+	initializers.DB.Create(&status5)
 
 	//Hash the password
 	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(user.Password), 14)
@@ -39,6 +45,7 @@ func main() {
 	user.Password = string(hashedPassword)
 	user1.Password = string(hashedPassword1)
 	//create some users
+	initializers.DB.Create(&root)
 	initializers.DB.Create(&user)  // Save the user to the database
 	initializers.DB.Create(&user1) // Save the user to the database
 
@@ -88,6 +95,28 @@ func main() {
 }
 
 // placeholder information
+var status1 = models.VisitStatus{
+	Text: "Not planned",
+}
+var status2 = models.VisitStatus{
+	Text: "planned",
+}
+var status3 = models.VisitStatus{
+	Text: "ready",
+}
+var status4 = models.VisitStatus{
+	Text: "to review",
+}
+var status5 = models.VisitStatus{
+	Text: "exported",
+}
+
+var root = models.User{
+	Username: "root",
+	Password: "d",
+	Email:    "",
+	Phone:    "",
+}
 var user = models.User{
 	Username: "markus",
 	Password: "pass",
