@@ -22,6 +22,8 @@ func main() {
 	initializers.DB.Exec("DROP TABLE IF EXISTS visit_debitors;")
 	initializers.DB.Exec("DROP TABLE IF EXISTS debitors;")
 	initializers.DB.Exec("DROP TABLE IF EXISTS visits;")
+	initializers.DB.Exec("DROP TABLE IF EXISTS visit_statuses;")
+	initializers.DB.Exec("DROP TABLE IF EXISTS visit_status_logs;")
 
 	initializers.DB.Exec("DROP TABLE IF EXISTS visit_responses;")
 	initializers.DB.Exec("PRAGMA foreign_keys = ON;")
@@ -30,7 +32,7 @@ func main() {
 	initializers.DB.AutoMigrate(&models.Debitor{})       // debitors
 	initializers.DB.AutoMigrate(&models.Visit{})         // visits (references debitors with many2many)
 	initializers.DB.AutoMigrate(&models.VisitResponse{}) // visit_responses
-	initializers.DB.AutoMigrate(&models.Visit{}, &models.VisitResponse{}, &models.VisitStatus{})
+	initializers.DB.AutoMigrate(&models.Visit{}, &models.VisitResponse{}, &models.VisitStatus{}, &models.VisitStatusLog{})
 
 	initializers.DB.Create(&status1)
 	initializers.DB.Create(&status2)
@@ -102,7 +104,7 @@ var status2 = models.VisitStatus{
 	Text: "planned",
 }
 var status3 = models.VisitStatus{
-	Text: "ready",
+	Text: "ready to visit",
 }
 var status4 = models.VisitStatus{
 	Text: "to review",
@@ -175,9 +177,10 @@ var visit1 = models.Visit{
 	Longitude:     "-122.4194",
 	Notes:         "First visit",
 	Sagsnr:        1,
-	VistDate:      time.Now(),
+	VisitDate:     time.Now(),
 	VisitTime:     "10:00 AM",
 	Debitors:      []models.Debitor{db1, db2},
+	StatusID:      4,
 }
 var visit2 = models.Visit{
 	UserID:        user.ID,
@@ -187,9 +190,10 @@ var visit2 = models.Visit{
 	Longitude:     "-122.4194",
 	Notes:         "First visit",
 	Sagsnr:        2,
-	VistDate:      time.Now(),
+	VisitDate:     time.Now(),
 	VisitTime:     "12:00 AM",
 	Debitors:      []models.Debitor{db2, db3},
+	StatusID:      4,
 }
 var visit3 = models.Visit{
 	UserID:        user.ID,
@@ -200,8 +204,9 @@ var visit3 = models.Visit{
 	Longitude:     "2.4194",
 	Notes:         "First visit",
 	Sagsnr:        3,
-	VistDate:      time.Now(),
+	VisitDate:     time.Now(),
 	VisitTime:     "12:00 AM",
+	StatusID:      4,
 }
 var visit4 = models.Visit{
 	UserID:        user.ID,
@@ -212,8 +217,9 @@ var visit4 = models.Visit{
 	Longitude:     "2.4194",
 	Notes:         "First visit",
 	Sagsnr:        4,
-	VistDate:      time.Now().AddDate(0, 0, 2),
+	VisitDate:     time.Now().AddDate(0, 0, 0),
 	VisitTime:     "18:00 AM",
+	StatusID:      4,
 }
 var visit5 = models.Visit{
 	UserID:        user.ID,
@@ -224,9 +230,10 @@ var visit5 = models.Visit{
 	Longitude:     "2.4194",
 	Notes:         "First visit",
 	Sagsnr:        4,
-	VistDate:      time.Now().AddDate(0, 0, -1),
+	VisitDate:     time.Now().AddDate(0, 0, 0),
 	VisitTime:     "18:00 AM",
 	Visited:       true,
+	StatusID:      3,
 }
 
 var visit6 = models.Visit{
@@ -238,9 +245,10 @@ var visit6 = models.Visit{
 	Longitude:     "2.4194",
 	Notes:         "First visit",
 	Sagsnr:        4,
-	VistDate:      time.Now().AddDate(0, 0, -1),
+	VisitDate:     time.Now().AddDate(0, 0, 1),
 	VisitTime:     "18:00 AM",
 	Visited:       false,
+	StatusID:      3,
 }
 
 var visitResponse1 = models.VisitResponse{

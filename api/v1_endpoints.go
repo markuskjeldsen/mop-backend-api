@@ -37,12 +37,43 @@ func GetVisits(c *gin.Context) {
 
 	if user.Rights == models.RightsUser {
 		initializers.DB.Preload("Visits").Preload("Visits.Debitors").Find(&users, user.ID)
-	} else if user.Rights == models.RightsAdmin || user.Rights == models.RightsDeveloper {
+	} else if user.Rights == models.RightsAdmin {
+		initializers.DB.Preload("Visits").Preload("Visits.Debitors").Where("id != 1").Find(&users)
+	} else if user.Rights == models.RightsDeveloper {
 		initializers.DB.Preload("Visits").Preload("Visits.Debitors").Find(&users)
 	}
 	c.JSON(http.StatusOK, gin.H{
 		"status": "success",
 		"users":  users,
+	})
+}
+
+func GetVisitsById(c *gin.Context) {
+	id := c.Param("id")
+	var visit models.Visit
+
+	user, ok := getVerifyUser(c)
+	if !ok {
+		c.JSON(http.StatusInternalServerError, gin.H{})
+		return
+	}
+
+	query := initializers.DB.Preload("Debitors")
+
+	if user.Rights == models.RightsUser {
+		query = query.Where("user_id = ?", user.ID)
+	} else if user.Rights == models.RightsAdmin {
+		query = query.Where("user_id != 1")
+	}
+
+	if err := query.First(&visit, id).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Visit not found"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"status": "success",
+		"visit":  visit,
 	})
 }
 
@@ -54,12 +85,27 @@ func Visit_responses(c *gin.Context) {
 
 	var users []models.User
 	if user.Rights == models.RightsUser {
-		// Fetch the user and preload VisitResponses
-		initializers.DB.Preload("Visits").Preload("Visits.Debitors").Preload("Visits.VisitResponse").First(&users, user.ID)
+		initializers.DB.
+			Preload("Visits").
+			Preload("Visits.Debitors").
+			Preload("Visits.VisitResponse").
+			Preload("Visits.Status").
+			First(&users, user.ID)
 	}
-	if user.Rights == models.RightsDeveloper || user.Rights == models.RightsAdmin {
-		// Fetch all users and preload VisitResponses
-		initializers.DB.Preload("Visits").Preload("Visits.Debitors").Preload("Visits.VisitResponse").Find(&users)
+	if user.Rights == models.RightsAdmin {
+		initializers.DB.
+			Preload("Visits").
+			Preload("Visits.Debitors").
+			Preload("Visits.VisitResponse").
+			Preload("Visits.Status").
+			Where("id != 1").Find(&users)
+	}
+	if user.Rights == models.RightsDeveloper {
+		initializers.DB.
+			Preload("Visits").
+			Preload("Visits.Debitors").
+			Preload("Visits.VisitResponse").
+			Preload("Visits.Status").Find(&users)
 	}
 
 	c.JSON(

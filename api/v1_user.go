@@ -33,7 +33,7 @@ func GetUser(c *gin.Context) {
 
 func GetUsers(c *gin.Context) {
 	var user []models.User
-	initializers.DB.Find(&user) // Preload visits for each user
+	initializers.DB.Where("id != 1").Find(&user) // Preload visits for each user
 	for i := range user {
 		user[i].Password = "" // Remove password from the response
 	}

@@ -112,12 +112,12 @@ type Visit struct {
 	Longitude     string         `json:"longitude"`
 	Notes         string         `json:"notes"`
 	Sagsnr        uint           `json:"sagsnr"`
-	VistDate      time.Time      `json:"visit_date"`
+	VisitDate     time.Time      `json:"visit_date"`
 	VisitTime     string         `json:"visit_time"`
 	VisitInterval string         `json:"visit_interval"`
 	Visited       bool           `json:"visited"`
 	StatusID      uint           `json:"status_id" gorm:"not null;default:1"` // <-- Add this
-	Status        VisitStatus    `json:"status"`                              // <-- Keep this for relation
+	Status        VisitStatus    `json:"status" gorm:"foreignKey:StatusID"`   // <-- Keep this for relation
 	Debitors      []Debitor      `json:"debitors" gorm:"many2many:visit_debitors;"`
 	VisitResponse *VisitResponse `json:"visit_response" gorm:"foreignKey:VisitID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
 }

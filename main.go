@@ -53,10 +53,21 @@ func start_server() {
 		apiv1.GET("/visit_responses", middleware.RequireAuthUser, api.Visit_responses)  // get all the responses
 		apiv1.POST("/visit_responses", middleware.RequireAuthUser, api.Create_response) // make a response
 		apiv1.GET("/visits", middleware.RequireAuthUser, api.GetVisits)
+		apiv1.GET("/visits/:id", middleware.RequireAuthUser, api.GetVisitsById)
+
 		apiv1.GET("/verifytoken", middleware.RequireAuthUser, api.Verifytoken)
 
 		apiv1.GET("/visits/AvailableVisit", middleware.RequireAuthAdmin, api.AvailableVisitCreation)
+
 		apiv1.POST("/visits/create", middleware.RequireAuthAdmin, api.VisitCreation)
+		apiv1.GET("/visits/create", middleware.RequireAuthAdmin, api.CreatedVisits)
+
+		apiv1.POST("/visits/visitfile", middleware.RequireAuthAdmin, api.VisitFile)
+
+		// add visitfile
+
+		apiv1.POST("/visits/plan", middleware.RequireAuthAdmin, api.PlanVisit)
+
 	}
 
 	r.StaticFile("/", "./static/index.html")
