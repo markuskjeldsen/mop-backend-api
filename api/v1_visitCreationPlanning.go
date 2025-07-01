@@ -456,3 +456,17 @@ func VisitFile(c *gin.Context) {
 
 	c.Data(http.StatusOK, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", buf.Bytes())
 }
+
+func VisitPDF(c *gin.Context) {
+	visitID := 4 // or get from params: c.Param("id")
+
+	pdfBytes := internal.GeneratePDFVisit(uint(visitID))
+
+	// Set headers for PDF download
+	c.Header("Content-Type", "application/pdf")
+	c.Header("Content-Disposition", "attachment; filename=visit.pdf")
+	c.Header("Content-Length", fmt.Sprintf("%d", len(pdfBytes)))
+
+	// Send PDF bytes
+	c.Data(http.StatusOK, "application/pdf", pdfBytes)
+}

@@ -123,18 +123,20 @@ var root = models.User{
 	Phone:    "",
 }
 var user = models.User{
-	Username: "markus",
+	Name:     "Markus Kjeldsen",
+	Username: "mkk",
 	Password: "pass",
 	Email:    "Markus@kjeldsen.dk",
 	Phone:    "42480991",
 	Rights:   models.RightsDeveloper,
 }
 var user1 = models.User{
-	Username: "patrick",
+	Name:     "Patrick Olsen",
+	Username: "po_admin",
 	Password: "pass",
 	Email:    "Patrick@olsen.dk",
 	Phone:    "21193038",
-	Rights:   models.RightsUser,
+	Rights:   models.RightsAdmin,
 }
 var db1 = models.Debitor{
 	Name:             "Cindy Lou",

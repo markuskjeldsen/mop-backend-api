@@ -60,6 +60,7 @@ const (
 // models/models.go
 type User struct {
 	gorm.Model
+	Name     string     `json:"name" binding:"required" gorm:"not null"`
 	Username string     `json:"username" binding:"required" gorm:"not null"`
 	Password string     `json:"password" binding:"required" gorm:"not null"`
 	Rights   UserRights `json:"rights" gorm:"default:user"` // user, admin, developer

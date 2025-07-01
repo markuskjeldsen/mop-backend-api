@@ -1,14 +1,18 @@
 package internal
 
 import (
+	"bytes"
 	"fmt"
+	"log"
 	"mime/multipart"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/go-pdf/fpdf"
 	"github.com/google/uuid"
 	"github.com/markuskjeldsen/mop-backend-api/initializers"
 	"github.com/markuskjeldsen/mop-backend-api/models"
@@ -57,4 +61,37 @@ func SaveFile(c *gin.Context, file *multipart.FileHeader) (string, error) {
 	}
 
 	return filepath, nil
+}
+
+func GeneratePDF(visitresponseID uint) {
+	var visitResponse models.VisitResponse
+	initializers.DB.Preload("Images").First(&visitResponse, visitresponseID)
+}
+
+func GeneratePDFVisit(visitID uint) []byte {
+	var visit models.Visit
+	initializers.DB.Preload("VisitResponse").Preload("VisitResponse.Images").First(&visit, visitID)
+
+	pdf := fpdf.New("P", "mm", "A4", "")
+	pdf.AddPage()
+	pdf.SetFont("Arial", "B", 16)
+	pdf.Cell(40, 10, fmt.Sprintf("Visit ID: %d", visit.ID))
+	pdf.Ln(12)
+
+	re := regexp.MustCompile(`[<>:"/\\|?*]`)
+	sanitizedAddress := re.ReplaceAllString(visit.Address, "_")
+	filename := fmt.Sprintf("pdfs/visit_%d_%s.pdf", visitID, sanitizedAddress)
+	os.MkdirAll("pdfs", os.ModePerm)
+
+	err := pdf.OutputFileAndClose(filename)
+	if err != nil {
+		log.Fatal(err)
+	}
+	var buf bytes.Buffer
+	err = pdf.Output(&buf)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return buf.Bytes()
 }

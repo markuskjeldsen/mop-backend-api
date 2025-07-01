@@ -2,12 +2,12 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"os"
 
 	"github.com/gin-gonic/gin"
 	"github.com/markuskjeldsen/mop-backend-api/api"
 	"github.com/markuskjeldsen/mop-backend-api/initializers"
+	"github.com/markuskjeldsen/mop-backend-api/internal"
 	"github.com/markuskjeldsen/mop-backend-api/middleware"
 )
 
@@ -18,17 +18,13 @@ func init() {
 }
 
 func main() {
-	//test()
-	start_server()
+	test()
+	//start_server()
 
 }
 
 func test() {
-	results, err := initializers.ExecuteQuery(initializers.Server, initializers.AdvoPro, initializers.StatusFemQuery)
-	if err != nil {
-		log.Fatal(err)
-	}
-	fmt.Printf("%v\n", results)
+	internal.GeneratePDFVisit(6)
 }
 
 func start_server() {
