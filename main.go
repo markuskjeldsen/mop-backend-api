@@ -18,9 +18,8 @@ func init() {
 }
 
 func main() {
-	test()
-	//start_server()
-
+	//test()
+	start_server()
 }
 
 func test() {
@@ -60,6 +59,8 @@ func start_server() {
 		apiv1.POST("/visits/visitfile", middleware.RequireAuthAdmin, api.VisitFile)                  // generates a visit excel file so the visits can be planned without making another visit
 
 		apiv1.POST("/visits/plan", middleware.RequireAuthAdmin, api.PlanVisit) // here visits are planned
+
+		apiv1.GET("/visit/pdf", middleware.RequireAuthAdmin, api.VisitPDF)
 
 	}
 

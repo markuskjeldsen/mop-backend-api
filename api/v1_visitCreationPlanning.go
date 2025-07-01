@@ -458,7 +458,16 @@ func VisitFile(c *gin.Context) {
 }
 
 func VisitPDF(c *gin.Context) {
-	visitID := 4 // or get from params: c.Param("id")
+
+	visitID, err := strconv.ParseInt(c.Query("id"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "The id could not be parsed",
+			"err":   err.Error(),
+			"id":    visitID,
+		})
+		return
+	}
 
 	pdfBytes := internal.GeneratePDFVisit(uint(visitID))
 
