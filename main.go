@@ -57,16 +57,12 @@ func start_server() {
 
 		apiv1.GET("/verifytoken", middleware.RequireAuthUser, api.Verifytoken)
 
-		apiv1.GET("/visits/AvailableVisit", middleware.RequireAuthAdmin, api.AvailableVisitCreation)
+		apiv1.GET("/visits/AvailableVisit", middleware.RequireAuthAdmin, api.AvailableVisitCreation) // gets visits that can be created
+		apiv1.POST("/visits/create", middleware.RequireAuthAdmin, api.VisitCreation)                 // creates thoses visits
+		apiv1.GET("/visits/create", middleware.RequireAuthAdmin, api.CreatedVisits)                  // retrives the created visits that have not yet been planned
+		apiv1.POST("/visits/visitfile", middleware.RequireAuthAdmin, api.VisitFile)                  // generates a visit excel file so the visits can be planned without making another visit
 
-		apiv1.POST("/visits/create", middleware.RequireAuthAdmin, api.VisitCreation)
-		apiv1.GET("/visits/create", middleware.RequireAuthAdmin, api.CreatedVisits)
-
-		apiv1.POST("/visits/visitfile", middleware.RequireAuthAdmin, api.VisitFile)
-
-		// add visitfile
-
-		apiv1.POST("/visits/plan", middleware.RequireAuthAdmin, api.PlanVisit)
+		apiv1.POST("/visits/plan", middleware.RequireAuthAdmin, api.PlanVisit) // here visits are planned
 
 	}
 
