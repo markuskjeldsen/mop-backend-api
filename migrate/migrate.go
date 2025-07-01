@@ -28,11 +28,14 @@ func main() {
 	initializers.DB.Exec("DROP TABLE IF EXISTS visit_responses;")
 	initializers.DB.Exec("PRAGMA foreign_keys = ON;")
 
-	initializers.DB.AutoMigrate(&models.User{})          // users
-	initializers.DB.AutoMigrate(&models.Debitor{})       // debitors
-	initializers.DB.AutoMigrate(&models.Visit{})         // visits (references debitors with many2many)
-	initializers.DB.AutoMigrate(&models.VisitResponse{}) // visit_responses
-	initializers.DB.AutoMigrate(&models.Visit{}, &models.VisitResponse{}, &models.VisitStatus{}, &models.VisitStatusLog{})
+	initializers.DB.AutoMigrate(
+		&models.User{},
+		&models.Debitor{},
+		&models.Visit{},
+		&models.VisitResponse{},
+		&models.VisitStatus{},
+		&models.VisitStatusLog{},
+		&models.VisitResponseImage{})
 
 	initializers.DB.Create(&status1)
 	initializers.DB.Create(&status2)

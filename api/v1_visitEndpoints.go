@@ -2,10 +2,14 @@ package api
 
 import (
 	"fmt"
+	"mime/multipart"
 	"net/http"
+	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/markuskjeldsen/mop-backend-api/initializers"
+	"github.com/markuskjeldsen/mop-backend-api/internal"
 	"github.com/markuskjeldsen/mop-backend-api/models"
 )
 
@@ -26,6 +30,56 @@ func Verifytoken(c *gin.Context) {
 		"status":  "success",
 		"message": "Token is valid",
 	})
+}
+
+func bindFormValues(form *multipart.Form, vr *models.VisitResponse) error {
+	// Helper to get form value
+	getValue := func(key string) string {
+		if values, ok := form.Value[key]; ok && len(values) > 0 {
+			return values[0]
+		}
+		return ""
+	}
+
+	// Parse required fields
+	visitID, _ := strconv.ParseUint(getValue("visit_id"), 10, 32)
+	vr.VisitID = uint(visitID)
+
+	// Parse date
+	if dateStr := getValue("actual_date"); dateStr != "" {
+		if date, err := time.Parse(time.RFC3339, dateStr); err == nil {
+			vr.ActDate = date
+		}
+	}
+
+	vr.ActTime = getValue("actual_time")
+	vr.ActLat = getValue("actual_latitude")
+	vr.ActLong = getValue("actual_longitude")
+
+	// Parse bools
+	vr.DebitorIsHome = getValue("debitor_is_home") == "true"
+	vr.PaymentReceived = getValue("payment_received") == "true"
+	vr.AssetAtAddress = getValue("asset_at_address") == "true"
+	vr.HasWork = getValue("has_work") == "true"
+
+	vr.Position = getValue("position")
+
+	// Parse numbers
+	if salary, err := strconv.ParseFloat(getValue("salary"), 32); err == nil {
+		vr.Salary = float32(salary)
+	}
+
+	if children, err := strconv.ParseUint(getValue("children_under_18"), 10, 32); err == nil {
+		vr.ChildrenUnder18 = uint(children)
+	}
+
+	if children, err := strconv.ParseUint(getValue("children_over_18"), 10, 32); err == nil {
+		vr.ChildrenOver18 = uint(children)
+	}
+
+	vr.Comments = getValue("comments")
+
+	return nil
 }
 
 func GetVisits(c *gin.Context) {
@@ -116,71 +170,49 @@ func Visit_responses(c *gin.Context) {
 		})
 }
 
-func Create_response(c *gin.Context) {
-	// this function creates a response and then marks the given visit as visited and returns the response
-
-	_, ok := getVerifyUser(c) // perhaps use user but rn there is no use
-	if !ok {
-		c.JSON(
-			http.StatusInternalServerError,
-			gin.H{"message": "something went wrong"})
+// POST /visit-response (form data only)
+func CreateVisitResponse(c *gin.Context) {
+	user, _ := getVerifyUser(c)
+	var visitResponse models.VisitResponse
+	if err := c.ShouldBindJSON(&visitResponse); err != nil {
+		fmt.Println(err.Error())
+		c.JSON(400, gin.H{"error": err.Error()})
 		return
 	}
 
-	contentType := c.ContentType()
-	var visit_resp models.VisitResponse
-	if contentType == "application/json" {
-		if err := c.ShouldBindBodyWithJSON(&visit_resp); err != nil {
-			fmt.Println(err)
-			c.JSON(http.StatusBadRequest, gin.H{
-				"status":  "Error",
-				"message": "Invalid JSON: " + err.Error(),
-				"msg":     "either the data type is wrong or the data is missing",
-			})
-			return
-		}
-	} else if contentType == "x-www-form-urlencoded" {
-		c.JSON(http.StatusNotImplemented, gin.H{
-			"status":  "Error",
-			"message": "Content type not supported",
-		})
-		return
-	} else {
-		c.JSON(http.StatusNotImplemented, gin.H{
-			"status":  "Error",
-			"message": "Content type not supported",
-		})
+	if err := initializers.DB.Create(&visitResponse).Error; err != nil {
+		fmt.Println(err.Error())
+		c.JSON(500, gin.H{"error": "Failed to save visit response"})
 		return
 	}
 
-	// we have revived the visit response, now check if
-	result := initializers.DB.Create(&visit_resp)
-	if result.Error != nil {
-		c.JSON(
-			http.StatusInternalServerError,
-			gin.H{
-				"error":   result.Error.Error(),
-				"message": "Something went wrong",
-			},
-		)
+	internal.UpdateVisitStatus(visitResponse.VisitID, 4, user.ID)
+	c.JSON(200, visitResponse)
+}
+
+// POST /visit-response/:id/images (one image at a time)
+func UploadVisitImage(c *gin.Context) {
+	visitIDdata := c.Param("id")
+	visitID, _ := strconv.ParseUint(visitIDdata, 10, 32)
+
+	file, err := c.FormFile("image")
+	if err != nil {
+		c.JSON(400, gin.H{"error": "No file uploaded"})
 		return
 	}
 
-	// Update the corresponding Visit record
-	var visit models.Visit
-	result = initializers.DB.Model(&visit).Where("id = ?", visit_resp.VisitID).Update("visited", true)
-	if result.Error != nil {
-		c.JSON(http.StatusOK,
-			gin.H{
-				"message":        "An error ocurred updating the visit",
-				"visit response": result.Error.Error(),
-			})
+	savedPath, err := internal.SaveFile(c, file)
+	if err != nil {
+		c.JSON(500, gin.H{"error": "Failed to save image"})
 		return
 	}
 
-	c.JSON(http.StatusOK,
-		gin.H{
-			"message":        "everything went well",
-			"visit response": visit_resp,
-		})
+	image := models.VisitResponseImage{
+		VisitResponseID: uint(visitID),
+		ImagePath:       savedPath,
+		OriginalName:    file.Filename,
+	}
+
+	initializers.DB.Create(&image)
+	c.JSON(200, image)
 }

@@ -5,3 +5,4 @@
 *.sh
 *mop-backend-api*
 static
+uploads

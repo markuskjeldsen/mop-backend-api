@@ -131,7 +131,7 @@ type VisitResponse struct {
 	ActTime     string    `json:"actual_time" binding:"required"`
 	ActLat      string    `json:"actual_latitude" binding:"required"`
 	ActLong     string    `json:"actual_longitude" binding:"required"`
-	PosAccuracy uint      `json:"pos_accuracy" binding:"required"`
+	PosAccuracy string    `json:"pos_accuracy" binding:"required"`
 
 	// response data
 	DebitorIsHome   bool `json:"debitor_is_home"`
@@ -190,4 +190,5 @@ type VisitResponseImage struct {
 	gorm.Model
 	VisitResponseID uint   `json:"visit_response_id"`
 	ImagePath       string `json:"image_path"`
+	OriginalName    string `json:"original_name"`
 }
