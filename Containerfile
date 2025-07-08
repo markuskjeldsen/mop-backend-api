@@ -12,26 +12,25 @@ RUN go mod download
 # Copy the rest of the application code
 COPY . .
 
-# Build the application
+# Build the application (CGO enabled for sqlite)
 RUN CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -o mop-backend-api .
 
 # 2. Run stage
 FROM alpine:latest
 WORKDIR /app
 
-# Install sqlite3 if your binary needs the CLI (optional)
 RUN apk add --no-cache sqlite-libs
 
-# Copy compiled binary and other necessary files
-COPY --from=build /app/mop-backend-api /app/
-COPY .env /app/
-COPY data.db /app/
+# Add a non-root user (UID 10001 is just an example)
+RUN adduser -D -u 10001 appuser
+USER appuser
 
-# Expose port (default Gin port, change if needed)
+# Copy binary; .env and db will come from the host
+COPY --from=build /app/mop-backend-api /app/
+COPY --from=build /app/static /app/static
+
+# Expose HTTP port
 EXPOSE 8080
 
-# Set environment (optional)
-ENV GIN_MODE=release
-
-# Command to run your application
+# Entrypoint (do NOT copy data.db, let it be mounted)
 CMD ["/app/mop-backend-api"]
