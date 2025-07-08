@@ -321,18 +321,32 @@ func PlanVisit(c *gin.Context) {
 		if err != nil {
 			// handle error
 		}
-
-		// Update visit in database
-		result := initializers.DB.Model(&models.Visit{}).
-			Where("id = ? AND sagsnr = ?", visitID, sagsnr).
-			Updates(models.Visit{
-				Latitude:      rowData["Latitude"],
-				Longitude:     rowData["Longitude"],
-				VisitTime:     rowData["Arrival Time"],
-				VisitInterval: visitIntervalRange(rowData["Arrival Time"]),
-				VisitDate:     parsedDate,
-				UserID:        uint(userIDUint),
-			})
+		var result *gorm.DB
+		if user.Rights == models.RightsDeveloper {
+			// Update visit in database
+			result = initializers.DB.Model(&models.Visit{}).
+				Where("id = ? AND sagsnr = ?", visitID, sagsnr).
+				Updates(models.Visit{
+					Latitude:      rowData["Latitude"],
+					Longitude:     rowData["Longitude"],
+					VisitTime:     rowData["Arrival Time"],
+					VisitInterval: visitIntervalRange(rowData["Arrival Time"]),
+					VisitDate:     parsedDate,
+					UserID:        uint(userIDUint),
+				})
+		} else {
+			// Update visit in database
+			result = initializers.DB.Model(&models.Visit{}).
+				Where("id = ? AND sagsnr = ? AND status_id = 1", visitID, sagsnr).
+				Updates(models.Visit{
+					Latitude:      rowData["Latitude"],
+					Longitude:     rowData["Longitude"],
+					VisitTime:     rowData["Arrival Time"],
+					VisitInterval: visitIntervalRange(rowData["Arrival Time"]),
+					VisitDate:     parsedDate,
+					UserID:        uint(userIDUint),
+				})
+		}
 
 		if result.Error != nil {
 			fmt.Println(result.Error.Error())
