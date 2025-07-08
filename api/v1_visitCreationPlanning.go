@@ -51,7 +51,7 @@ func visitIntervalRange(arrivalTime string) string {
 }
 
 func AvailableVisitCreation(c *gin.Context) {
-	results, err := initializers.ExecuteQuery(initializers.Server, initializers.AdvoPro, initializers.StatusFemQuery)
+	results, err := internal.ExecuteQuery(internal.Server, internal.AdvoPro, internal.StatusFemQuery)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -128,7 +128,7 @@ func VisitCreation(c *gin.Context) {
 		createdVisits = append(createdVisits, visit)
 
 		for _, debtor := range visitData.Debtors {
-			debitorData := initializers.FetchDebitorData(debtor.DebitorId)
+			debitorData := internal.FetchDebitorData(debtor.DebitorId)
 			if debitorData == nil {
 				log.Fatal("Debitor didnt exist in advopro")
 				return
@@ -351,6 +351,51 @@ func PlanVisit(c *gin.Context) {
 	c.JSON(200, gin.H{"message": "Visits planned successfully"})
 }
 
+func PlannedVisits(c *gin.Context) {
+	// this endpoint gets the visits that are planned and who is going to visit them
+	// query the database users and their visits there the visit is in status code 2
+	// return the data
+
+	var users []models.User
+	initializers.DB.
+		Where("id != ?", 1).
+		Preload("Visits", "status_id = ?", 2).
+		Preload("Visits.Debitors").
+		Find(&users)
+
+	c.JSON(200, users)
+}
+
+func PatchVisit(c *gin.Context) {
+	var visit models.Visit
+	visitIDStr := c.Param("id")
+
+	visitID, err := strconv.ParseUint(visitIDStr, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid ID"})
+		return
+	}
+
+	if err := c.ShouldBindJSON(&visit); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid data"})
+		return
+	}
+
+	var existingVisit models.Visit
+	if err := initializers.DB.First(&existingVisit, visitID).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Visit not found"})
+		return
+	}
+
+	// Only update non-zero value fields
+	if err := initializers.DB.Model(&existingVisit).Updates(visit).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update visit"})
+		return
+	}
+
+	c.JSON(http.StatusOK, existingVisit)
+}
+
 func CreatedVisits(c *gin.Context) {
 	user, ok := getVerifyUser(c)
 	if !ok {
@@ -457,6 +502,27 @@ func VisitFile(c *gin.Context) {
 	c.Data(http.StatusOK, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", buf.Bytes())
 }
 
+func VisitLetterSent(c *gin.Context) {
+	user, ok := getVerifyUser(c)
+	id, ok1 := c.GetQuery("id")
+	visitID, err := strconv.ParseInt(id, 10, 32)
+
+	if !ok {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "User could not be found from the token"})
+		return
+	}
+	if !ok1 {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "the id is not correct"})
+		return
+	}
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "the id is not correct", "error": err.Error()})
+		return
+	}
+
+	internal.UpdateVisitStatus(uint(visitID), 3, user.ID) // now its ready to visit
+}
+
 func VisitPDF(c *gin.Context) {
 
 	visitID, err := strconv.ParseInt(c.Query("id"), 10, 32)
@@ -470,10 +536,14 @@ func VisitPDF(c *gin.Context) {
 	}
 
 	pdfBytes := internal.GeneratePDFVisit(uint(visitID))
+	var visit models.Visit
+	initializers.DB.First(&visit, visitID)
+	filename := "id" + strconv.Itoa(int(visit.ID)) + "_sagsnr" + strconv.Itoa(int(visit.Sagsnr)) + ".pdf"
 
 	// Set headers for PDF download
+	c.Header("Access-Control-Expose-Headers", "Content-Disposition")
 	c.Header("Content-Type", "application/pdf")
-	c.Header("Content-Disposition", "attachment; filename=visit.pdf")
+	c.Header("Content-Disposition", "attachment; filename="+filename)
 	c.Header("Content-Length", fmt.Sprintf("%d", len(pdfBytes)))
 
 	// Send PDF bytes

@@ -50,6 +50,7 @@ func CreateUser(c *gin.Context) {
 		Username string `json:"username" form:"name" binding:"required"`
 		Password string `json:"password" form:"password" binding:"required"`
 		Email    string `json:"email" form:"email"`
+		Rights   string `json:"rights"`
 	}
 
 	// bind the data to the user var
@@ -84,10 +85,17 @@ func CreateUser(c *gin.Context) {
 	hash, err := bcrypt.GenerateFromPassword([]byte(body.Password), 10)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"status": "Error with Database",
+			"status": "couldnt generate password hash",
 			"error":  err.Error(),
 		})
 		return
+	}
+	if body.Rights == "user" {
+		user.Rights = models.RightsUser
+	} else if body.Rights == "admin" {
+		user.Rights = models.RightsAdmin
+	} else {
+		user.Rights = models.RightsUser
 	}
 
 	user.Username = body.Username
@@ -192,7 +200,7 @@ func Login(c *gin.Context) {
 		c.SetSameSite(http.SameSiteLaxMode)
 	} else {
 		//          name            value         age     path domain secure, httpOnly
-		c.SetCookie("Authorization", tokenString, 3600*17, "/", "localhost", false, false) // should be true, true in prod
+		c.SetCookie("Authorization", tokenString, 3600*17, "/", os.Getenv("ALLOW_ORIGIN"), false, false) // should be true, true in prod
 		c.SetSameSite(http.SameSiteNoneMode)
 	}
 	if datatype == "application/json" {

@@ -103,7 +103,7 @@ func GetVisits(c *gin.Context) {
 }
 
 func GetVisitsById(c *gin.Context) {
-	id := c.Param("id")
+	id := c.Query("id")
 	var visit models.Visit
 
 	user, ok := getVerifyUser(c)
@@ -128,6 +128,34 @@ func GetVisitsById(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"status": "success",
 		"visit":  visit,
+	})
+}
+
+func GetVisitsByStatus(c *gin.Context) {
+	status := c.Query("status")
+	var visits []models.Visit
+
+	user, ok := getVerifyUser(c)
+	if !ok {
+		c.JSON(http.StatusInternalServerError, gin.H{})
+		return
+	}
+
+	if user.Rights == models.RightsUser {
+		c.JSON(http.StatusForbidden, gin.H{})
+		return
+	}
+
+	result := initializers.DB.Preload("VisitResponse").Preload("Debitors").Where("Status_id = ?", status).Find(&visits)
+
+	if result.Error != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Visits not found", "message": result.Error.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"status": "success",
+		"visit":  visits,
 	})
 }
 
@@ -215,4 +243,23 @@ func UploadVisitImage(c *gin.Context) {
 
 	initializers.DB.Create(&image)
 	c.JSON(200, image)
+}
+
+func DebtInformation(c *gin.Context) {
+	visitIDdata := c.Query("VisitId")
+	visitID, _ := strconv.ParseUint(visitIDdata, 10, 64)
+
+	var visit models.Visit
+	result := initializers.DB.First(&visit, visitID)
+	if result.Error != nil {
+		fmt.Println(result.Error.Error())
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": result.Error.Error(),
+		})
+		return
+	}
+	data := internal.CurrentDebtCase(visit.Sagsnr)
+
+	c.JSON(http.StatusOK, data)
+
 }

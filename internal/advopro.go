@@ -1,60 +1,15 @@
-package initializers
+package internal
 
 import (
 	"database/sql"
 	"fmt"
+	"log"
+	"strconv"
 	"time"
 
 	_ "github.com/denisenkom/go-mssqldb"
 	"github.com/markuskjeldsen/mop-backend-api/models"
 )
-
-const Server = "MOPSRV01\\SQL1"
-const AdvoPro = "AdvoPro"
-
-const StatusFemQuery = `
-SELECT
-	f.Sagsnr as sagsnr,
-	f.Status as status,
-	f.ForlobInfo as forlobInfo,
-	d.Navn as navn,
-	d.Adresse as adresse,
-	d.Postnr as postnr,
-	d.Bynavn as bynavn,
-	d.Noter as noter,
-	d.DebitorId as debitorId
-FROM
-	vwInkassoForlob f
-JOIN
-	vwInkassoForlobDebitor fd ON fd.ForlobId = f.ForlobId
-JOIN
-	vwInkassoDebitor d ON d.DebitorId = fd.DebitorId
-WHERE
-	f.Status = 5
-order by f.Sagsnr`
-
-const SagsnrQuery = `
-SELECT 
-    F.Sagsnr as sagsnr,
-    D.Navn as navn,
-    D.Adresse as adresse
-FROM
-    vwInkassoForlob F
-JOIN
-    vwInkassoForlobDebitor FD on FD.ForlobId = F.ForlobId
-JOIN
-    vwInkassoDebitor D ON D.DebitorId = FD.DebitorId
-WHERE
-    F.Sagsnr = @p1
-`
-const debitorQuery = `
-SELECT
-	*
-from
-	vwInkassoDebitor d
-where
-	d.DebitorId = @p1
-`
 
 func ExecuteQuery(server, database string, query string, params ...interface{}) ([]map[string]interface{}, error) {
 	// Connection string: user/password uses SQL Auth; for integrated (Windows) auth, see below
@@ -163,4 +118,46 @@ func FetchDebitorData(debitorNum int64) *models.Debitor {
 	}
 
 	return &deb
+}
+
+type DebtRow struct {
+	SumIndbetalinger      float64
+	RestgeldAntaget       float64
+	RestanceDato          time.Time // use appropriate type, e.g. time.Time or string
+	KreditorHovedstol     float64
+	RestgeldVedBrev       float64
+	SumIndbetalingVedBrev float64
+}
+
+func CurrentDebtCase(sagsnr uint) []DebtRow {
+	debts, err := ExecuteQuery(Server, AdvoPro, debtInfo, sagsnr)
+	if err != nil {
+		log.Fatalln(err.Error())
+	}
+
+	var result []DebtRow
+	for _, debt := range debts {
+		row := DebtRow{
+			SumIndbetalinger:      byteToFloat(debt["SumIndbetalinger"].([]byte)),
+			RestgeldAntaget:       byteToFloat(debt["restgeldAntaget"].([]byte)),
+			RestanceDato:          debt["RestanceDato"].(time.Time), // adjust type if needed!
+			KreditorHovedstol:     byteToFloat(debt["KreditorHovedstol"].([]byte)),
+			RestgeldVedBrev:       byteToFloat(debt["restgeldVedBrev"].([]byte)),
+			SumIndbetalingVedBrev: byteToFloat(debt["SumIndbetalingVedBrev"].([]byte)),
+		}
+
+		result = append(result, row)
+	}
+
+	return result
+}
+
+// Converts []byte to float64, returns 0.0 on error
+func byteToFloat(b []byte) float64 {
+	s := string(b)
+	f, err := strconv.ParseFloat(s, 64)
+	if err != nil {
+		return 0.0 // or handle error as needed
+	}
+	return f
 }
