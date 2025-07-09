@@ -11,6 +11,7 @@ import (
 	"github.com/markuskjeldsen/mop-backend-api/initializers"
 	"github.com/markuskjeldsen/mop-backend-api/internal"
 	"github.com/markuskjeldsen/mop-backend-api/models"
+	"gorm.io/gorm"
 )
 
 func getVerifyUser(c *gin.Context) (models.User, bool) {
@@ -150,7 +151,9 @@ func GetVisitsByStatus(c *gin.Context) {
 		Preload("Status").
 		Preload("VisitResponse").
 		Preload("Debitors").
-		//		Preload("User").
+		Preload("User", func(db *gorm.DB) *gorm.DB {
+			return db.Select("id", "name", "email", "phone")
+		}).
 		Where("Status_id = ?", status).
 		Find(&visits)
 

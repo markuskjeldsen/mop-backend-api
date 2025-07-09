@@ -106,14 +106,14 @@ type VisitStatusLog struct {
 
 type Visit struct {
 	gorm.Model
-	UserID uint `json:"user_id"`
-
+	UserID          uint             `json:"user_id"`
+	User            User             `json:"user"`
 	Address         string           `json:"address"`
 	Latitude        string           `json:"latitude"`
 	Longitude       string           `json:"longitude"`
 	Notes           string           `json:"notes"`
 	Sagsnr          uint             `json:"sagsnr"`
-	VisitDate       time.Time        `json:"visit_date"`
+	VisitDate       time.Time        `json:"visit_date" gorm:"type:date"`
 	VisitTime       string           `json:"visit_time"`
 	VisitInterval   string           `json:"visit_interval"`
 	Visited         bool             `json:"visited"`
