@@ -9,12 +9,12 @@ import (
 type PropertyType string
 
 const (
-	FreestandingHouse PropertyType = "Fritlæggende hus"
-	Townhouse         PropertyType = "Byhus"
-	TerracedHouse     PropertyType = "Rækkehus"
-	SummerHouse       PropertyType = "Sommerhus"
-	GardenColony      PropertyType = "Kolonihave"
-	Apartment         PropertyType = "Lejlighed"
+	PropertyFreestandingHouse PropertyType = "Fritlæggende hus"
+	PropertyTownhouse         PropertyType = "Byhus"
+	PropertyTerracedHouse     PropertyType = "Rækkehus"
+	PropertySummerHouse       PropertyType = "Sommerhus"
+	PropertyGardenColony      PropertyType = "Kolonihave"
+	PropertyApartment         PropertyType = "Lejlighed"
 )
 
 type MaintenanceStatus string
@@ -52,9 +52,9 @@ const (
 type Risk string
 
 const (
-	Low    Risk = "Low"
-	Medium Risk = "Medium"
-	High   Risk = "High"
+	LowRisk    Risk = "Low"
+	MediumRisk Risk = "Medium"
+	HighRisk   Risk = "High"
 )
 
 // models/models.go
@@ -81,8 +81,7 @@ type Debitor struct {
 	Risk             Risk      `json:"risk"` // Low, Medium, High
 	SSN              string    `json:"ssn"`
 
-	Notes string `json:"notes"`
-
+	Notes  string  `json:"notes"`
 	Visits []Visit `gorm:"many2many:visit_debitors;"`
 }
 

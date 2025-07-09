@@ -200,7 +200,7 @@ func Login(c *gin.Context) {
 		c.SetSameSite(http.SameSiteLaxMode)
 	} else {
 		//          name            value         age     path domain secure, httpOnly
-		c.SetCookie("Authorization", tokenString, 3600*17, "/", os.Getenv("ALLOW_ORIGIN"), false, false) // should be true, true in prod
+		c.SetCookie("Authorization", tokenString, 3600*17, "/", os.Getenv("ALLOW_ORIGIN"), false, true) // should be true, true in prod
 		c.SetSameSite(http.SameSiteNoneMode)
 	}
 	if datatype == "application/json" {

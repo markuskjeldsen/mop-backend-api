@@ -42,6 +42,8 @@ trækker besøgs data ud og skriver ind i advopro (måske automatisk i fremtiden
 
 login
 register
+besøgs form
+Hvis konsulenten har tjekket at bilen er skadet så skal han også vedhæfte et billede
 
 ## currently
 
@@ -52,11 +54,7 @@ automated deployment
 
 ### Add functionanility
 
-besøgs form
-
 ## future
-
-Hvis konsulenten har tjekket at bilen er skadet så skal han også vedhæfte et billede
 
 typer af besøg (anmeldt) (uanmeldt genbesøg: indenfor 10 dage af seneste anmeldte besøg) (anmeldt genbesøg)
 

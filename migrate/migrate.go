@@ -146,7 +146,7 @@ var db1 = models.Debitor{
 	Gender:           models.Female,
 	Birthday:         time.Date(1995, 5, 10, 0, 0, 0, 0, time.UTC),
 	AdvoproDebitorId: 45,
-	Risk:             models.Low,
+	Risk:             models.LowRisk,
 	SSN:              "140599-0013",
 	Notes:            "Friendly and prompt payer.",
 }
@@ -158,7 +158,7 @@ var db2 = models.Debitor{
 	Gender:           models.Male,
 	Birthday:         time.Date(1970, 12, 25, 0, 0, 0, 0, time.UTC),
 	AdvoproDebitorId: 13,
-	Risk:             models.High,
+	Risk:             models.HighRisk,
 	SSN:              "020202-3213",
 	Notes:            "High risk, late payer.",
 }
@@ -170,7 +170,7 @@ var db3 = models.Debitor{
 	Gender:           models.Other,
 	Birthday:         time.Date(1982, 6, 1, 0, 0, 0, 0, time.UTC),
 	AdvoproDebitorId: 99,
-	Risk:             models.Medium,
+	Risk:             models.MediumRisk,
 	SSN:              "140205-0013",
 	Notes:            "Sometimes cooperates.",
 }
@@ -281,7 +281,7 @@ var visitResponse1 = models.VisitResponse{
 	DebtAmount: 1000000,
 	Settlement: "forlig",
 
-	PropertyType:      models.Apartment,
+	PropertyType:      models.PropertyApartment,
 	MaintenanceStatus: models.Deteriorated,
 
 	OwnershipStatus: "renter",
@@ -314,7 +314,7 @@ var visitResponse2 = models.VisitResponse{
 	DebtAmount: 1000000,
 	Settlement: "forlig",
 
-	PropertyType:      models.FreestandingHouse,
+	PropertyType:      models.PropertyFreestandingHouse,
 	MaintenanceStatus: models.WellMaintained,
 
 	OwnershipStatus: "owner",
@@ -346,7 +346,7 @@ var visitResponse3 = models.VisitResponse{
 	DebtAmount: 1000000,
 	Settlement: "forlig",
 
-	PropertyType:      models.Apartment,
+	PropertyType:      models.PropertyApartment,
 	MaintenanceStatus: models.Deteriorated,
 
 	OwnershipStatus: "owner",
@@ -378,7 +378,7 @@ var visitResponse4 = models.VisitResponse{
 	DebtAmount: 1000000,
 	Settlement: "forlig",
 
-	PropertyType:      models.SummerHouse,
+	PropertyType:      models.PropertySummerHouse,
 	MaintenanceStatus: models.WellMaintained,
 
 	OwnershipStatus: "renter",
