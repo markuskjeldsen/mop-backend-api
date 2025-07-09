@@ -146,7 +146,13 @@ func GetVisitsByStatus(c *gin.Context) {
 		return
 	}
 
-	result := initializers.DB.Preload("VisitResponse").Preload("Debitors").Where("Status_id = ?", status).Find(&visits)
+	result := initializers.DB.
+		Preload("Status").
+		Preload("VisitResponse").
+		Preload("Debitors").
+		//		Preload("User").
+		Where("Status_id = ?", status).
+		Find(&visits)
 
 	if result.Error != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Visits not found", "message": result.Error.Error()})

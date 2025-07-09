@@ -106,7 +106,8 @@ type VisitStatusLog struct {
 
 type Visit struct {
 	gorm.Model
-	UserID          uint             `json:"user_id"`
+	UserID uint `json:"user_id"`
+
 	Address         string           `json:"address"`
 	Latitude        string           `json:"latitude"`
 	Longitude       string           `json:"longitude"`
