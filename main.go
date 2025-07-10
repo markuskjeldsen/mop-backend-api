@@ -33,6 +33,7 @@ func start_server() {
 	r := gin.New() // was gin.Default()
 	r.Use(middleware.RequestLogger())
 	r.Use(middleware.CORSMiddleware)
+	r.Use(middleware.GeoIPBlocker("DK", "./static/GeoLite2-Country.mmdb"))
 	r.SetTrustedProxies(nil)
 
 	apiv1 := r.Group("/api/v1") // Grouping routes under /api/v1
@@ -45,7 +46,7 @@ func start_server() {
 		apiv1.PATCH("/user", middleware.RequireAuthUser, api.Patch)
 
 		apiv1.POST("/register", middleware.RequireAuthAdmin, api.CreateUser)
-		apiv1.POST("/login", api.Login)
+		apiv1.POST("/login", middleware.LoginAttemptLog, api.Login)
 		apiv1.POST("/logout", middleware.RequireAuthUser, api.Logout)
 
 		apiv1.GET("/visit-response/all", middleware.RequireAuthUser, api.Visit_responses)         // get all the responses

@@ -10,6 +10,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/markuskjeldsen/mop-backend-api/initializers"
+	"github.com/markuskjeldsen/mop-backend-api/middleware"
 	"github.com/markuskjeldsen/mop-backend-api/models"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -125,41 +126,15 @@ func CreateUser(c *gin.Context) {
 
 func Login(c *gin.Context) {
 	// bind the data from req
-	var body struct {
-		Username string `json:"username" form:"username" binding:"required"`
-		Password string `json:"password" form:"password" binding:"required"`
-	}
 
-	datatype := c.ContentType()
-	fmt.Println("Content-Type:", datatype)
-	// bind the data to the user var
-	if datatype == "application/json" {
-		if err := c.ShouldBindJSON(&body); err != nil { //before it was c.Bind
-			c.JSON(http.StatusBadRequest, gin.H{
-				"Status": "ERROR could not bind",
-				"user_structure": map[string]string{
-					"username": "string",
-					"password": "string",
-				},
-				"error": err.Error(),
-			})
-			return
-		}
-	} else if datatype == "application/x-www-form-urlencoded" {
-		if err := c.ShouldBind(&body); err != nil { //before it was c.Bind
-			c.JSON(http.StatusBadRequest, gin.H{
-				"Status": "ERROR could not bind",
-				"error":  err.Error(),
-			})
-			return
-		}
-	} else {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"Status": "ERROR could not bind",
-			"error":  "Content-Type not supported",
-		})
-		return
-	}
+	bodydata, _ := c.Get("body")
+	body := bodydata.(middleware.BodyLogin)
+	attemptID, _ := c.Get("attemptID")
+
+	// if it goes wrong after these, then its because the user dosnt exist or the
+	initializers.DB.Model(&models.LoginAttempt{}).
+		Where("id = ?", attemptID).
+		Update("failure_reason", "User does not exist")
 
 	var user models.User
 	fmt.Println("Username:", body.Username)
@@ -170,16 +145,22 @@ func Login(c *gin.Context) {
 		})
 		return
 	}
+	initializers.DB.Model(&models.LoginAttempt{}).
+		Where("id = ?", attemptID).
+		Update("failure_reason", "Incorrect password")
 	err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(body.Password))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"Status": "ERROR",
-			"error":  err.Error(),
+			"error": "ERROR could find user",
 		})
 		return
 	}
 
 	// generate JWT token
+
+	initializers.DB.Model(&models.LoginAttempt{}).
+		Where("id = ?", attemptID).
+		Update("failure_reason", "failure to create token")
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"sub": user.ID,
@@ -203,6 +184,7 @@ func Login(c *gin.Context) {
 		c.SetCookie("Authorization", tokenString, 3600*17, "/", os.Getenv("ALLOW_ORIGIN"), false, true) // should be true, true in prod
 		c.SetSameSite(http.SameSiteNoneMode)
 	}
+	datatype := c.ContentType()
 	if datatype == "application/json" {
 		// return JWT token
 		c.JSON(http.StatusOK, gin.H{
@@ -213,6 +195,10 @@ func Login(c *gin.Context) {
 	} else if datatype == "application/x-www-form-urlencoded" {
 		c.Redirect(http.StatusFound, "/profile")
 	}
+	initializers.DB.Model(&models.LoginAttempt{}).
+		Where("id = ?", attemptID).
+		Update("failure_reason", "None").
+		Update("successful", true)
 }
 
 func Logout(c *gin.Context) {
