@@ -37,3 +37,41 @@ func VisitPDF(c *gin.Context) {
 	// Send PDF bytes
 	c.Data(http.StatusOK, "application/pdf", pdfBytes)
 }
+
+func ReviewedVisit(c *gin.Context) {
+	user, ok := getVerifyUser(c)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, nil)
+		return
+	}
+
+	var body struct {
+		ReviewedIds []uint `json:"reviewed_ids"`
+	}
+
+	if err := c.ShouldBindJSON(&body); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid input"})
+		return
+	}
+
+	type iErr struct {
+		Err string `json:"err"`
+		ID  uint   `json:"id"`
+	}
+
+	var iErrs []iErr
+
+	for _, visitId := range body.ReviewedIds {
+		item := iErr{ID: visitId}
+		err := internal.UpdateVisitStatus(visitId, 5, user.ID)
+		if err != nil {
+			item.Err = err.Error()
+		} else {
+			item.Err = "no error"
+		}
+
+		iErrs = append(iErrs, item)
+	}
+	c.JSON(http.StatusOK, iErrs)
+
+}

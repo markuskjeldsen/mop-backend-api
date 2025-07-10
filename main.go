@@ -67,7 +67,7 @@ func start_server() {
 		apiv1.PATCH("/visits/planned/:id", middleware.RequireAuthAdmin, api.PatchVisit) // here are the planned visits
 
 		apiv1.GET("/visit/pdf", middleware.RequireAuthAdmin, api.VisitPDF)
-
+		apiv1.POST("visit/reviewed", middleware.RequireAuthAdmin, api.ReviewedVisit)
 	}
 
 	r.StaticFile("/", "./static/index.html")

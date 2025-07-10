@@ -2,6 +2,7 @@ package internal
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"log"
 	"mime/multipart"
@@ -26,6 +27,11 @@ func UpdateVisitStatus(visitID uint, newStatusID uint, userID uint) error {
 		return err
 	}
 	oldStatusID := visit.StatusID
+
+	if oldStatusID == newStatusID {
+		return errors.New("the record is already in that status code")
+
+	}
 
 	// Update status
 	if err := initializers.DB.Model(&visit).Update("status_id", newStatusID).Error; err != nil {

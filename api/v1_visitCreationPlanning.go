@@ -17,42 +17,6 @@ import (
 	"gorm.io/gorm"
 )
 
-func AvailableVisitCreation(c *gin.Context) {
-	results, err := internal.ExecuteQuery(internal.Server, internal.AdvoPro, internal.StatusFemQuery)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	// Process results
-	var processedResults = make(map[int64]map[string]interface{})
-	for _, result := range results {
-		sagsnr := result["sagsnr"].(int64)
-		if _, ok := processedResults[sagsnr]; !ok {
-			processedResults[sagsnr] = map[string]interface{}{
-				"adresse": result["adresse"],
-				"bynavn":  result["bynavn"],
-				"postnr":  result["postnr"],
-				"sagsnr":  sagsnr,
-				"debtors": []map[string]interface{}{},
-			}
-		}
-		processedResults[sagsnr]["debtors"] = append(processedResults[sagsnr]["debtors"].([]map[string]interface{}), map[string]interface{}{
-			"debitorId": result["debitorId"],
-			"navn":      result["navn"],
-		})
-	}
-
-	// Convert map to slice
-	var finalResults []map[string]interface{}
-	for _, value := range processedResults {
-		finalResults = append(finalResults, value)
-	}
-
-	c.JSON(http.StatusOK, gin.H{
-		"results": finalResults,
-	})
-}
-
 func VisitCreation(c *gin.Context) {
 	// this function creates the visits that the user chooses, and they are then initalized in the database and created as an excel file
 	type debitorData struct {
@@ -192,33 +156,6 @@ func VisitCreation(c *gin.Context) {
 	writer.Flush()
 
 	c.Data(http.StatusOK, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", buf.Bytes())
-
-}
-
-func CreatedVisits(c *gin.Context) {
-	user, ok := getVerifyUser(c)
-	if !ok {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"message": "User could not be found from the token",
-		})
-		return
-	}
-	fmt.Println(user.Username)
-	var planned []models.Visit
-	result := initializers.DB.Preload("Debitors").Where(&models.Visit{StatusID: 1}).Find(&planned)
-	if result.Error != nil {
-		fmt.Println(result.Error.Error())
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"message": "the database happend upon an error",
-			"error":   result.Error.Error(),
-		})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{
-		"message": "everything went well",
-		"data":    planned,
-	})
 
 }
 

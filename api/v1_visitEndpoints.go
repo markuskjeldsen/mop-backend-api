@@ -2,6 +2,7 @@ package api
 
 import (
 	"fmt"
+	"log"
 	"mime/multipart"
 	"net/http"
 	"strconv"
@@ -82,6 +83,41 @@ func bindFormValues(form *multipart.Form, vr *models.VisitResponse) error {
 
 	return nil
 }
+func AvailableVisitCreation(c *gin.Context) {
+	results, err := internal.ExecuteQuery(internal.Server, internal.AdvoPro, internal.StatusFemQuery)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Process results
+	var processedResults = make(map[int64]map[string]interface{})
+	for _, result := range results {
+		sagsnr := result["sagsnr"].(int64)
+		if _, ok := processedResults[sagsnr]; !ok {
+			processedResults[sagsnr] = map[string]interface{}{
+				"adresse": result["adresse"],
+				"bynavn":  result["bynavn"],
+				"postnr":  result["postnr"],
+				"sagsnr":  sagsnr,
+				"debtors": []map[string]interface{}{},
+			}
+		}
+		processedResults[sagsnr]["debtors"] = append(processedResults[sagsnr]["debtors"].([]map[string]interface{}), map[string]interface{}{
+			"debitorId": result["debitorId"],
+			"navn":      result["navn"],
+		})
+	}
+
+	// Convert map to slice
+	var finalResults []map[string]interface{}
+	for _, value := range processedResults {
+		finalResults = append(finalResults, value)
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"results": finalResults,
+	})
+}
 
 func GetVisits(c *gin.Context) {
 	var users []models.User
@@ -101,6 +137,33 @@ func GetVisits(c *gin.Context) {
 		"status": "success",
 		"users":  users,
 	})
+}
+
+func CreatedVisits(c *gin.Context) {
+	user, ok := getVerifyUser(c)
+	if !ok {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"message": "User could not be found from the token",
+		})
+		return
+	}
+	fmt.Println(user.Username)
+	var planned []models.Visit
+	result := initializers.DB.Preload("Debitors").Where(&models.Visit{StatusID: 1}).Find(&planned)
+	if result.Error != nil {
+		fmt.Println(result.Error.Error())
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"message": "the database happend upon an error",
+			"error":   result.Error.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "everything went well",
+		"data":    planned,
+	})
+
 }
 
 func GetVisitsById(c *gin.Context) {
