@@ -26,6 +26,8 @@ func main() {
 	initializers.DB.Exec("DROP TABLE IF EXISTS visit_status_logs;")
 
 	initializers.DB.Exec("DROP TABLE IF EXISTS login_attempts;")
+	initializers.DB.Exec("DROP TABLE IF EXISTS auth_attempt;")
+
 	initializers.DB.Exec("DROP TABLE IF EXISTS visit_responses;")
 	initializers.DB.Exec("PRAGMA foreign_keys = ON;")
 
@@ -38,6 +40,7 @@ func main() {
 		&models.VisitStatusLog{},
 		&models.VisitResponseImage{},
 		&models.LoginAttempt{},
+		&models.AuthAttempt{},
 	)
 
 	initializers.DB.Create(&status1)

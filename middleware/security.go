@@ -64,6 +64,8 @@ func LoginAttemptLog(c *gin.Context) {
 
 func isLocalIP(ip net.IP) bool {
 	// Loopback
+	strIp := ip.To4()
+	fmt.Println(strIp)
 	if ip.IsLoopback() {
 		return true
 	}
@@ -86,15 +88,25 @@ func isLocalIP(ip net.IP) bool {
 	return false
 }
 
+func isBannedIP(ip net.IP) bool {
+	var attempt models.AuthAttempt
+	initializers.DB.First(&attempt).Where("ip = ? AND created_at > ?", ip, time.Now().Add(-12*time.Hour))
+	return attempt.ID != 0 // if id is not zero then its banned
+}
+
 func GeoIPBlocker(allowedCountry string, dbFile string) gin.HandlerFunc {
 	db, _ := geoip2.Open(dbFile)
 	return func(c *gin.Context) {
 		ip := net.ParseIP(c.ClientIP())
-		if (os.Getenv("PRODUCTION")) != "True" {
+		if (os.Getenv("PRODUCTION")) != "True" && len(c.GetHeader("REAL-IP")) > 4 {
 			ip = net.ParseIP(c.GetHeader("REAL-IP"))
 		}
 		if isLocalIP(ip) {
 			c.Next()
+			return
+		}
+		if isBannedIP(ip) {
+			c.AbortWithStatusJSON(403, gin.H{"error": "Access forbidden"})
 			return
 		}
 

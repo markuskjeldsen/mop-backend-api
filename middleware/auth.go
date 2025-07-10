@@ -50,6 +50,10 @@ func RequireAuthUser(c *gin.Context) {
 		initializers.DB.First(&user, claims["sub"])
 		if user.ID == 0 {
 			fmt.Println("The token does not belong to any user")
+			var attempt models.AuthAttempt
+			attempt.IP = c.ClientIP()
+			attempt.FailureReason = "Token does not belong to any user"
+			initializers.DB.Create(&attempt)
 			c.AbortWithStatus(http.StatusUnauthorized)
 		}
 
@@ -93,6 +97,10 @@ func RequireAuthAdmin(c *gin.Context) {
 		var user models.User
 		initializers.DB.First(&user, claims["sub"])
 		if user.ID == 0 {
+			var attempt models.AuthAttempt
+			attempt.IP = c.ClientIP()
+			attempt.FailureReason = "Token does not belong to any user"
+			initializers.DB.Create(&attempt)
 			c.AbortWithStatus(http.StatusUnauthorized)
 		}
 

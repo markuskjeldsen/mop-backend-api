@@ -69,6 +69,12 @@ type User struct {
 	Visits   []Visit    `json:"visits" gorm:"foreignKey:UserID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
 }
 
+type AuthAttempt struct {
+	gorm.Model
+	IP            string `gorm:"size:45;not null"`
+	FailureReason string `json:"failure_reason"`
+}
+
 type LoginAttempt struct {
 	gorm.Model
 	UserID        uint   `json:"user_id" gorm:"not null"`
