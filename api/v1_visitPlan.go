@@ -134,6 +134,11 @@ func PlanVisit(c *gin.Context) {
 		if err != nil {
 			fmt.Println(err)
 		}
+		parsedStopnr, err := strconv.ParseUint(rowData["Stop"], 10, 64)
+		if err != nil {
+			fmt.Println(err)
+		}
+
 		sagsnr := uint(sagsnrInt)
 
 		userIDUint, err := strconv.ParseUint(userID, 10, 64)
@@ -151,6 +156,7 @@ func PlanVisit(c *gin.Context) {
 					VisitTime:     rowData["Arrival Time"],
 					VisitInterval: visitIntervalRange(rowData["Arrival Time"]),
 					VisitDate:     parsedDate,
+					Stopnr:        uint(parsedStopnr),
 					Address:       rowData["Address"],
 					UserID:        uint(userIDUint),
 				})

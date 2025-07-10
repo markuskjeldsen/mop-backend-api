@@ -240,15 +240,11 @@ func VisitFile(c *gin.Context) {
 
 func VisitLetterSent(c *gin.Context) {
 	user, ok := getVerifyUser(c)
-	id, ok1 := c.GetQuery("id")
+	id := c.Query("id")
 	visitID, err := strconv.ParseInt(id, 10, 32)
 
 	if !ok {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "User could not be found from the token"})
-		return
-	}
-	if !ok1 {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "the id is not correct"})
 		return
 	}
 	if err != nil {

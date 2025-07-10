@@ -128,6 +128,7 @@ type Visit struct {
 	Longitude       string           `json:"longitude"`
 	Notes           string           `json:"notes"`
 	Sagsnr          uint             `json:"sagsnr"`
+	Stopnr          uint             `json:"stop_nr"`
 	VisitDate       time.Time        `json:"visit_date" gorm:"type:date"`
 	VisitTime       string           `json:"visit_time"`
 	VisitInterval   string           `json:"visit_interval"`
