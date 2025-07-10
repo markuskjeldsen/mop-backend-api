@@ -67,6 +67,9 @@ func start_server() {
 		apiv1.GET("/visits/planned", middleware.RequireAuthAdmin, api.PlannedVisits)    // here are the planned visits
 		apiv1.PATCH("/visits/planned/:id", middleware.RequireAuthAdmin, api.PatchVisit) // here are the planned visits
 
+		//send the letters
+		apiv1.POST("/visit/letterSent", middleware.RequireAuthAdmin, api.VisitLetterSent) // remember GetQuery("id")
+
 		apiv1.GET("/visit/pdf", middleware.RequireAuthAdmin, api.VisitPDF)
 		apiv1.POST("visit/reviewed", middleware.RequireAuthAdmin, api.ReviewedVisit)
 	}

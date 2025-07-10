@@ -151,6 +151,7 @@ func PlanVisit(c *gin.Context) {
 					VisitTime:     rowData["Arrival Time"],
 					VisitInterval: visitIntervalRange(rowData["Arrival Time"]),
 					VisitDate:     parsedDate,
+					Address:       rowData["Address"],
 					UserID:        uint(userIDUint),
 				})
 		} else {
@@ -163,6 +164,7 @@ func PlanVisit(c *gin.Context) {
 					VisitTime:     rowData["Arrival Time"],
 					VisitInterval: visitIntervalRange(rowData["Arrival Time"]),
 					VisitDate:     parsedDate,
+					Address:       rowData["Address"],
 					UserID:        uint(userIDUint),
 				})
 		}
