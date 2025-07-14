@@ -29,6 +29,8 @@ func main() {
 	initializers.DB.Exec("DROP TABLE IF EXISTS auth_attempt;")
 
 	initializers.DB.Exec("DROP TABLE IF EXISTS visit_responses;")
+	initializers.DB.Exec("DROP TABLE IF EXISTS visit_response_images;")
+
 	initializers.DB.Exec("PRAGMA foreign_keys = ON;")
 
 	initializers.DB.AutoMigrate(

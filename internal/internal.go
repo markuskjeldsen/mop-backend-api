@@ -99,6 +99,35 @@ func PdfRepport(pdf *fpdf.Fpdf, visit models.Visit) {
 	date := visit.VisitResponse.ActDate.Format("2006-01-02")
 	pdfwrite(pdf, "Dato og tidspunkt for besøget: "+visit.VisitResponse.ActTime[:8]+" "+date)
 	pdfwrite(pdf, "Besøget tog sted ved "+visit.Address)
+	// svaret for besøget
+	if visit.VisitResponse.AssetAtAddress {
+		if visit.VisitResponse.AssetDamaged {
+			pdfwrite(pdf, "Aktivet var på addressen og var beskadiget")
+		} else {
+			pdfwrite(pdf, "Aktivet var på addressen og var ikke beskadiget")
+		}
+	} else {
+		pdfwrite(pdf, "Aktivet var ikke på addressen")
+	}
+
+	if visit.VisitResponse.DebitorIsHome {
+		if visit.VisitResponse.HasWork {
+			pdfwrite(pdf, "Debitor var hjemme, "+
+				"civilstatus:"+string(visit.VisitResponse.CivilStatus)+
+				". Debitor har ikke arbejde")
+		} else {
+			pdfwrite(pdf, "Debitor var hjemme, "+
+				"civilstatus:"+string(visit.VisitResponse.CivilStatus)+
+				". Debitor har arbejde")
+		}
+	} else {
+		pdfwrite(pdf, "Debitor var ikke hjemme")
+	}
+
+	// visit.VisitResponse.PropertyType
+
+	pdfwrite(pdf, "Bolig typen er: "+string(visit.VisitResponse.PropertyType))
+	pdfwrite(pdf, "Standen af huset er:"+string(visit.VisitResponse.MaintenanceStatus))
 
 	// til slut billederne
 	pdf.AddPage()

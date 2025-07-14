@@ -18,7 +18,9 @@ import (
 )
 
 func VisitCreation(c *gin.Context) {
-	// this function creates the visits that the user chooses, and they are then initalized in the database and created as an excel file
+	// this function creates the visits that the user chooses,
+	// the visit is created
+	// and they are then initalized in the database and created as an excel file
 	type debitorData struct {
 		DebitorId int64  `json:"debitorId"`
 		Navn      string `json:"navn"`
@@ -41,6 +43,9 @@ func VisitCreation(c *gin.Context) {
 		return
 	}
 
+	// when creating visits, remember that the address it defined at the debitor
+	//
+
 	var createdVisits []models.Visit
 	for _, visitData := range visitsData {
 		// create visit
@@ -50,7 +55,7 @@ func VisitCreation(c *gin.Context) {
 		}
 
 		visit := models.Visit{
-			UserID:  1, // assuming you have the user ID,
+			UserID:  1,
 			Address: visitData.Adresse + "," + visitData.Postnr + " " + visitData.Bynavn,
 			Notes:   notes,
 			Sagsnr:  uint(visitData.Sagsnr),

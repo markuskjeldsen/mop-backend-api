@@ -89,29 +89,52 @@ func AvailableVisitCreation(c *gin.Context) {
 		log.Fatal(err)
 	}
 
-	// Process results
-	var processedResults = make(map[int64]map[string]interface{})
-	for _, result := range results {
+	// Process results - group by address + sagsnr combination
+	var processedVisits = make(map[string]map[string]interface{})
+
+	for index, result := range results {
 		sagsnr := result["sagsnr"].(int64)
-		if _, ok := processedResults[sagsnr]; !ok {
-			processedResults[sagsnr] = map[string]interface{}{
-				"adresse": result["adresse"],
-				"bynavn":  result["bynavn"],
-				"postnr":  result["postnr"],
-				"sagsnr":  sagsnr,
-				"debtors": []map[string]interface{}{},
+		adresse := result["adresse"].(string)
+		postnr := result["postnr"].(string)
+		bynavn := result["bynavn"].(string)
+		statuskode := result["status"].(int64)
+		fristDato := result["Fristdato"].(time.Time).Format("2006-01-02")
+
+		// Create combined key: address + case number
+		addressCaseKey := fmt.Sprintf("%s%s%s_%d", adresse, postnr, bynavn, sagsnr)
+
+		if _, ok := processedVisits[addressCaseKey]; !ok {
+			// Create new visit entry
+			processedVisits[addressCaseKey] = map[string]interface{}{
+				"index":      index,
+				"sagsnr":     sagsnr,
+				"adresse":    adresse,
+				"postnr":     postnr,
+				"bynavn":     bynavn,
+				"status":     statuskode,
+				"frist_dato": fristDato,
+				"debtors":    []map[string]interface{}{},
 			}
 		}
-		processedResults[sagsnr]["debtors"] = append(processedResults[sagsnr]["debtors"].([]map[string]interface{}), map[string]interface{}{
-			"debitorId": result["debitorId"],
-			"navn":      result["navn"],
-		})
+
+		// Add debtor to this visit
+		processedVisits[addressCaseKey]["debtors"] = append(
+			processedVisits[addressCaseKey]["debtors"].([]map[string]interface{}),
+			map[string]interface{}{
+				"debitorId": result["debitorId"],
+				"navn":      result["navn"],
+			},
+		)
 	}
 
 	// Convert map to slice
 	var finalResults []map[string]interface{}
-	for _, value := range processedResults {
+	for _, value := range processedVisits {
 		finalResults = append(finalResults, value)
+	}
+
+	for _, m := range finalResults {
+		fmt.Println(m["index"])
 	}
 
 	c.JSON(http.StatusOK, gin.H{

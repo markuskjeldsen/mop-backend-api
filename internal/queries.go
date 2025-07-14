@@ -8,6 +8,7 @@ SELECT
 	f.Sagsnr as sagsnr,
 	f.Status as status,
 	f.ForlobInfo as forlobInfo,
+	f.Fristdato,
 	d.Navn as navn,
 	d.Adresse as adresse,
 	d.Postnr as postnr,
@@ -21,8 +22,8 @@ JOIN
 JOIN
 	vwInkassoDebitor d ON d.DebitorId = fd.DebitorId
 WHERE
-	f.Status = 5
-order by f.Sagsnr`
+	f.Status in (5)
+`
 
 const SagsnrQuery = `
 SELECT 
