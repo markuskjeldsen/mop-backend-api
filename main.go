@@ -54,6 +54,7 @@ func start_server() {
 		apiv1.POST("/visit-response/:id/images", middleware.RequireAuthUser, api.UploadVisitImage)
 
 		apiv1.GET("/visits", middleware.RequireAuthUser, api.GetVisits)
+		apiv1.GET("/visits/types", api.GetVisitTypes)
 		apiv1.GET("/visits/byId", middleware.RequireAuthUser, api.GetVisitsById)          //query parameter
 		apiv1.GET("/visits/byStatus", middleware.RequireAuthAdmin, api.GetVisitsByStatus) // query parameter
 		apiv1.GET("/visits/debt", middleware.RequireAuthUser, api.DebtInformation)        // query parameter

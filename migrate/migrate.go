@@ -31,6 +31,8 @@ func main() {
 	initializers.DB.Exec("DROP TABLE IF EXISTS visit_responses;")
 	initializers.DB.Exec("DROP TABLE IF EXISTS visit_response_images;")
 
+	initializers.DB.Exec("DROP TABLE IF EXISTS visit_type;")
+
 	initializers.DB.Exec("PRAGMA foreign_keys = ON;")
 
 	initializers.DB.AutoMigrate(
@@ -43,6 +45,7 @@ func main() {
 		&models.VisitResponseImage{},
 		&models.LoginAttempt{},
 		&models.AuthAttempt{},
+		&models.VisitType{},
 	)
 
 	initializers.DB.Create(&status1)
@@ -62,6 +65,12 @@ func main() {
 	initializers.DB.Create(&user)  // Save the user to the database
 	initializers.DB.Create(&user1) // Save the user to the database
 
+	// init some visit types
+	initializers.DB.Create(&type1)
+	initializers.DB.Create(&type2)
+	initializers.DB.Create(&type3)
+	initializers.DB.Create(&type4)
+
 	//create debitors
 	initializers.DB.Create(&db1)
 	initializers.DB.Create(&db2)
@@ -69,9 +78,11 @@ func main() {
 
 	// create some visits to the debitors
 	visit1.UserID = user.ID
+	visit1.TypeID = type1.ID
 	visit1.Debitors = []models.Debitor{db1, db3}
 
 	visit2.UserID = user.ID
+	visit2.TypeID = type2.ID
 	visit2.Debitors = []models.Debitor{db2, db3}
 
 	initializers.DB.Create(&visit1) // Save the visit to the database
@@ -85,9 +96,16 @@ func main() {
 
 	//create some visits to the debitors
 	visit3.UserID = user1.ID
+	visit3.TypeID = type3.ID
+
 	visit4.UserID = user1.ID
+	visit4.TypeID = type4.ID
+
 	visit5.UserID = user1.ID
+	visit5.TypeID = type1.ID
+
 	visit6.UserID = user1.ID
+	visit6.TypeID = type2.ID
 
 	// add debitors to the visits
 	visit3.Debitors = []models.Debitor{db1}
@@ -104,7 +122,6 @@ func main() {
 	visitResponse4.VisitID = visit4.ID
 	initializers.DB.Create(&visitResponse3) // Save the visit response to the database
 	initializers.DB.Create(&visitResponse4) // Save the visit response to the database
-
 }
 
 // placeholder information
@@ -122,6 +139,31 @@ var status4 = models.VisitStatus{
 }
 var status5 = models.VisitStatus{
 	Text: "exported",
+}
+
+var type1 = models.VisitType{
+	Text: "købekontrakt",
+	Description: `En købekontrakt betyder at bilen ejes af debitor. 
+	Debitor skylder dog penge som han har brugt på bilen. 
+	Det er derfor vigtigt at vide hvordan bilen har det og om han har solgt eller andet`,
+}
+
+var type2 = models.VisitType{
+	Text: "leasing",
+	Description: `En Leasing aftale betyder at bilen ikke ejes af debitor. 
+	Det betyder at man godt bare må tage bilen. 
+	Det er derfor vigtigt at vide hvordan bilen har det, og evt. hvor den er nu`,
+}
+
+var type3 = models.VisitType{
+	Text: "blanco",
+	Description: `En blanco aftale betyder at man bare skal have penge ud af debitor.
+	Det betyder at det er vigtigt at finde ud af hvor rig personen er, og hvor godt de kan betale en gæld tilbage`,
+}
+
+var type4 = models.VisitType{
+	Text:        "brev",
+	Description: `Dette betyder at vi bare gerne vil aflevere et brev, evt. tage et billede af postkassen eller mangel derpå`,
 }
 
 var root = models.User{

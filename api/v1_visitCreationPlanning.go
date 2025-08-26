@@ -35,11 +35,18 @@ func VisitCreation(c *gin.Context) {
 		Bynavn  string        `json:"bynavn"`
 		Noter   *string       `json:"noter"`
 		Debtors []debitorData `json:"debtors"`
+
+		//
+		VisitType models.VisitType `json:"visit_type"`
 	}
 	var visitsData []visitData
 
 	if err := c.ShouldBindBodyWithJSON(&visitsData); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	if len(visitsData) == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "No data is sent"})
 		return
 	}
 
@@ -73,7 +80,7 @@ func VisitCreation(c *gin.Context) {
 			// create debitor in local database if not exists
 			var existingDebitor models.Debitor
 			result := initializers.DB.Where("advopro_debitor_id = ?", debtor.DebitorId).First(&existingDebitor)
-			if result.Error != nil {
+			if result.Error != nil { //if debitor isnt there then create them
 				if result.Error == gorm.ErrRecordNotFound {
 					debitor := models.Debitor{
 						Name:             debitorData.Name,

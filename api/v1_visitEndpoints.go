@@ -132,11 +132,11 @@ func AvailableVisitCreation(c *gin.Context) {
 	for _, value := range processedVisits {
 		finalResults = append(finalResults, value)
 	}
-
-	for _, m := range finalResults {
-		fmt.Println(m["index"])
-	}
-
+	/*
+		for _, m := range finalResults {
+			fmt.Println(m["index"])
+		}
+	*/
 	c.JSON(http.StatusOK, gin.H{
 		"results": finalResults,
 	})
@@ -160,6 +160,12 @@ func GetVisits(c *gin.Context) {
 		"status": "success",
 		"users":  users,
 	})
+}
+
+func GetVisitTypes(c *gin.Context) {
+	var visitTypes []models.VisitType
+	initializers.DB.Find(&visitTypes)
+	c.JSON(http.StatusOK, visitTypes)
 }
 
 func CreatedVisits(c *gin.Context) {
@@ -234,6 +240,7 @@ func GetVisitsByStatus(c *gin.Context) {
 	}
 
 	result := initializers.DB.
+		Preload("Type").
 		Preload("Status").
 		Preload("VisitResponse").
 		Preload("Debitors").

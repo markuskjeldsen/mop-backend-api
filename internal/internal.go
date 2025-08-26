@@ -70,7 +70,7 @@ func SaveFile(c *gin.Context, file *multipart.FileHeader) (string, error) {
 }
 
 func pdfwrite(pdf *fpdf.Fpdf, message string) {
-	pdf.Cell(float64(len(message)*2), 10, message)
+	pdf.Cell(float64(len(message))*2.1, 10, message)
 	pdf.Ln(10)
 }
 

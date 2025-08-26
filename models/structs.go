@@ -119,6 +119,12 @@ type VisitStatusLog struct {
 	ChangedByID uint      `json:"changed_by_id"` // Optionally, reference User.ID
 }
 
+type VisitType struct {
+	gorm.Model
+	Text        string `json:"text"`
+	Description string `json:"description"`
+}
+
 type Visit struct {
 	gorm.Model
 	UserID          uint             `json:"user_id"`
@@ -138,6 +144,8 @@ type Visit struct {
 	Debitors        []Debitor        `json:"debitors" gorm:"many2many:visit_debitors;"`
 	VisitResponse   *VisitResponse   `json:"visit_response" gorm:"foreignKey:VisitID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
 	VisitStatusLogs []VisitStatusLog `json:"visit_status_logs" gorm:"foreignKey:VisitID"`
+	TypeID          uint             `json:"type_id"`
+	Type            VisitType        `json:"type" gorm:"foreignKey:TypeID"`
 }
 
 type VisitResponse struct {

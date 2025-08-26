@@ -22,7 +22,7 @@ JOIN
 JOIN
 	vwInkassoDebitor d ON d.DebitorId = fd.DebitorId
 WHERE
-	f.Status in (5)
+	f.Status in (4,5,7)
 `
 
 const SagsnrQuery = `
