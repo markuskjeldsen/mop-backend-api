@@ -66,6 +66,7 @@ func VisitCreation(c *gin.Context) {
 			Address: visitData.Adresse + "," + visitData.Postnr + " " + visitData.Bynavn,
 			Notes:   notes,
 			Sagsnr:  uint(visitData.Sagsnr),
+			TypeID:  visitData.VisitType.ID,
 		}
 		initializers.DB.Create(&visit)
 		createdVisits = append(createdVisits, visit)

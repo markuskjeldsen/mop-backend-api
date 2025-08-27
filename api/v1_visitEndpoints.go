@@ -178,7 +178,10 @@ func CreatedVisits(c *gin.Context) {
 	}
 	fmt.Println(user.Username)
 	var planned []models.Visit
-	result := initializers.DB.Preload("Debitors").Where(&models.Visit{StatusID: 1}).Find(&planned)
+	result := initializers.DB.
+		Preload("Type").
+		Preload("Debitors").
+		Where(&models.Visit{StatusID: 1}).Find(&planned)
 	if result.Error != nil {
 		fmt.Println(result.Error.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -205,7 +208,7 @@ func GetVisitsById(c *gin.Context) {
 		return
 	}
 
-	query := initializers.DB.Preload("Debitors")
+	query := initializers.DB.Preload("Type").Preload("Debitors")
 
 	if user.Rights == models.RightsUser {
 		query = query.Where("user_id = ?", user.ID)

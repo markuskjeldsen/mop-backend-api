@@ -95,16 +95,16 @@ func main() {
 	initializers.DB.Create(&visitResponse2) // Save the visit response to the database
 
 	//create some visits to the debitors
-	visit3.UserID = user1.ID
+	visit3.UserID = user.ID
 	visit3.TypeID = type3.ID
 
-	visit4.UserID = user1.ID
+	visit4.UserID = user.ID
 	visit4.TypeID = type4.ID
 
-	visit5.UserID = user1.ID
+	visit5.UserID = user.ID
 	visit5.TypeID = type1.ID
 
-	visit6.UserID = user1.ID
+	visit6.UserID = user.ID
 	visit6.TypeID = type2.ID
 
 	// add debitors to the visits
