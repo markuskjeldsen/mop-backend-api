@@ -57,7 +57,8 @@ func CreateUser(c *gin.Context) {
 	// bind the data to the user var
 	datatype := c.ContentType()
 
-	if datatype == "application/json" {
+	switch datatype {
+	case "application/json":
 		if err := c.Bind(&body); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{
 				"Status": "ERROR could not bind",
@@ -69,7 +70,7 @@ func CreateUser(c *gin.Context) {
 			})
 			return
 		}
-	} else if datatype == "application/x-www-form-urlencoded" {
+	case "application/x-www-form-urlencoded":
 		if err := c.ShouldBind(&body); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{
 				"Status": "ERROR could not bind",
@@ -91,11 +92,12 @@ func CreateUser(c *gin.Context) {
 		})
 		return
 	}
-	if body.Rights == "user" {
-		user.Rights = models.RightsUser
-	} else if body.Rights == "admin" {
+	switch body.Rights {
+	case "admin":
 		user.Rights = models.RightsAdmin
-	} else {
+	case "user":
+		user.Rights = models.RightsUser
+	default:
 		user.Rights = models.RightsUser
 	}
 
@@ -113,12 +115,13 @@ func CreateUser(c *gin.Context) {
 		return
 	}
 
-	if datatype == "application/json" {
+	switch datatype {
+	case "application/json":
 		c.JSON(http.StatusOK, gin.H{
 			"message": "sucessfully created new user",
 			"user":    user,
 		})
-	} else if datatype == "application/x-www-form-urlencoded" {
+	case "application/x-www-form-urlencoded":
 		c.Redirect(http.StatusFound, "/")
 		c.Set("message", "created new user, head to login to login and see your profile")
 	}
@@ -185,16 +188,19 @@ func Login(c *gin.Context) {
 		c.SetSameSite(http.SameSiteNoneMode)
 	}
 	datatype := c.ContentType()
-	if datatype == "application/json" {
+
+	switch datatype {
+	case "application/json":
 		// return JWT token
 		c.JSON(http.StatusOK, gin.H{
 			"token":   tokenString, //type tokenString if important
 			"message": "sucessfully logged in",
 			"user":    user,
 		})
-	} else if datatype == "application/x-www-form-urlencoded" {
+	case "application/x-www-form-urlencoded":
 		c.Redirect(http.StatusFound, "/profile")
 	}
+
 	initializers.DB.Model(&models.LoginAttempt{}).
 		Where("id = ?", attemptID).
 		Update("failure_reason", "None").

@@ -99,11 +99,12 @@ func FetchDebitorData(debitorNum int64) *models.Debitor {
 	}
 
 	var gender models.Gender
-	if genderNum == 0 {
+	switch genderNum {
+	case 0:
 		gender = models.Male
-	} else if genderNum == 1 {
+	case 1:
 		gender = models.Female
-	} else {
+	default:
 		gender = models.Other
 	}
 

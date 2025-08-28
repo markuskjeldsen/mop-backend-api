@@ -22,17 +22,18 @@ func LoginAttemptLog(c *gin.Context) {
 	var body BodyLogin
 	datatype := c.ContentType()
 
-	if datatype == "application/json" {
+	switch datatype {
+	case "application/json":
 		if err := c.ShouldBindJSON(&body); err != nil { //before it was c.Bind
 			c.AbortWithStatus(http.StatusBadRequest)
 			return
 		}
-	} else if datatype == "application/x-www-form-urlencoded" {
+	case "application/x-www-form-urlencoded":
 		if err := c.ShouldBind(&body); err != nil { //before it was c.Bind
 			c.AbortWithStatus(http.StatusBadRequest)
 			return
 		}
-	} else {
+	default:
 		c.AbortWithStatus(http.StatusBadRequest)
 		return
 	}

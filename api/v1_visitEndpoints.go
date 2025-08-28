@@ -3,7 +3,6 @@ package api
 import (
 	"fmt"
 	"log"
-	"mime/multipart"
 	"net/http"
 	"strconv"
 	"time"
@@ -34,55 +33,6 @@ func Verifytoken(c *gin.Context) {
 	})
 }
 
-func bindFormValues(form *multipart.Form, vr *models.VisitResponse) error {
-	// Helper to get form value
-	getValue := func(key string) string {
-		if values, ok := form.Value[key]; ok && len(values) > 0 {
-			return values[0]
-		}
-		return ""
-	}
-
-	// Parse required fields
-	visitID, _ := strconv.ParseUint(getValue("visit_id"), 10, 32)
-	vr.VisitID = uint(visitID)
-
-	// Parse date
-	if dateStr := getValue("actual_date"); dateStr != "" {
-		if date, err := time.Parse(time.RFC3339, dateStr); err == nil {
-			vr.ActDate = date
-		}
-	}
-
-	vr.ActTime = getValue("actual_time")
-	vr.ActLat = getValue("actual_latitude")
-	vr.ActLong = getValue("actual_longitude")
-
-	// Parse bools
-	vr.DebitorIsHome = getValue("debitor_is_home") == "true"
-	vr.PaymentReceived = getValue("payment_received") == "true"
-	vr.AssetAtAddress = getValue("asset_at_address") == "true"
-	vr.HasWork = getValue("has_work") == "true"
-
-	vr.Position = getValue("position")
-
-	// Parse numbers
-	if salary, err := strconv.ParseFloat(getValue("salary"), 32); err == nil {
-		vr.Salary = float32(salary)
-	}
-
-	if children, err := strconv.ParseUint(getValue("children_under_18"), 10, 32); err == nil {
-		vr.ChildrenUnder18 = uint(children)
-	}
-
-	if children, err := strconv.ParseUint(getValue("children_over_18"), 10, 32); err == nil {
-		vr.ChildrenOver18 = uint(children)
-	}
-
-	vr.Comments = getValue("comments")
-
-	return nil
-}
 func AvailableVisitCreation(c *gin.Context) {
 	results, err := internal.ExecuteQuery(internal.Server, internal.AdvoPro, internal.StatusFemQuery)
 	if err != nil {
@@ -149,11 +99,12 @@ func GetVisits(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{})
 	}
 
-	if user.Rights == models.RightsUser {
+	switch user.Rights {
+	case models.RightsUser:
 		initializers.DB.Preload("Visits").Preload("Visits.Debitors").Find(&users, user.ID)
-	} else if user.Rights == models.RightsAdmin {
+	case models.RightsAdmin:
 		initializers.DB.Preload("Visits").Preload("Visits.Debitors").Where("id != 1").Find(&users)
-	} else if user.Rights == models.RightsDeveloper {
+	case models.RightsDeveloper:
 		initializers.DB.Preload("Visits").Preload("Visits.Debitors").Find(&users)
 	}
 	c.JSON(http.StatusOK, gin.H{
@@ -210,9 +161,10 @@ func GetVisitsById(c *gin.Context) {
 
 	query := initializers.DB.Preload("Type").Preload("Debitors").Preload("User")
 
-	if user.Rights == models.RightsUser {
+	switch user.Rights {
+	case models.RightsUser:
 		query = query.Where("user_id = ?", user.ID)
-	} else if user.Rights == models.RightsAdmin {
+	case models.RightsAdmin:
 		query = query.Where("user_id != 1")
 	}
 
