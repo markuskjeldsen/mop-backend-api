@@ -160,13 +160,21 @@ type VisitResponse struct {
 	PosAccuracy string    `json:"pos_accuracy" binding:"required"`
 
 	// response data
-	DebitorIsHome   bool `json:"debitor_is_home"`
-	PaymentReceived bool `json:"payment_received"`
-	AssetAtAddress  bool `json:"asset_at_address"`
-	AssetDelivered  bool `json:"asset_delivered"`
-	AssetDamaged    bool `json:"asset_damaged"` // if then discribe
-	KeysGiven       bool `json:"keys_given"`
-	KeysReceived    bool `json:"keys_received"`
+	DebitorIsHome   bool   `json:"debitor_is_home"`
+	PaymentReceived bool   `json:"payment_received"`
+	AssetAtAddress  bool   `json:"asset_at_address"`
+	AssetAtWorkshop bool   `json:"asset_at_workshop"`
+	AssetCleaned    bool   `json:"asset_cleaned"`
+	AssetLocation   string `json:"asset_location"`
+
+	AssetComments string `json:"asset_comments"`
+
+	AssetDelivered bool `json:"asset_delivered"`
+	AssetDamaged   bool `json:"asset_damaged"` // if then discribe
+	KeysGiven      bool `json:"keys_given"`
+	KeysReceived   bool `json:"keys_received"`
+
+	OdometerKm uint `json:"odometer_km"`
 
 	SFSigned bool `json:"sf_signed"`
 	SESigned bool `json:"se_signed"`

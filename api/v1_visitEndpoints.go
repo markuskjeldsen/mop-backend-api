@@ -208,7 +208,7 @@ func GetVisitsById(c *gin.Context) {
 		return
 	}
 
-	query := initializers.DB.Preload("Type").Preload("Debitors")
+	query := initializers.DB.Preload("Type").Preload("Debitors").Preload("User")
 
 	if user.Rights == models.RightsUser {
 		query = query.Where("user_id = ?", user.ID)
@@ -221,6 +221,7 @@ func GetVisitsById(c *gin.Context) {
 		return
 	}
 
+	visit.User.Password = ""
 	c.JSON(http.StatusOK, gin.H{
 		"status": "success",
 		"visit":  visit,
@@ -274,6 +275,7 @@ func Visit_responses(c *gin.Context) {
 	if user.Rights == models.RightsUser {
 		initializers.DB.
 			Preload("Visits").
+			Preload("Visits.Type").
 			Preload("Visits.Debitors").
 			Preload("Visits.VisitResponse").
 			Preload("Visits.Status").
@@ -282,6 +284,7 @@ func Visit_responses(c *gin.Context) {
 	if user.Rights == models.RightsAdmin {
 		initializers.DB.
 			Preload("Visits").
+			Preload("Visits.Type").
 			Preload("Visits.Debitors").
 			Preload("Visits.VisitResponse").
 			Preload("Visits.Status").
@@ -290,9 +293,14 @@ func Visit_responses(c *gin.Context) {
 	if user.Rights == models.RightsDeveloper {
 		initializers.DB.
 			Preload("Visits").
+			Preload("Visits.Type").
 			Preload("Visits.Debitors").
 			Preload("Visits.VisitResponse").
 			Preload("Visits.Status").Find(&users)
+	}
+
+	for i := range users {
+		users[i].Password = ""
 	}
 
 	c.JSON(
@@ -330,13 +338,13 @@ func UploadVisitImage(c *gin.Context) {
 
 	file, err := c.FormFile("image")
 	if err != nil {
-		c.JSON(400, gin.H{"error": "No file uploaded"})
+		c.JSON(400, gin.H{"error": err.Error()})
 		return
 	}
 
 	savedPath, err := internal.SaveFile(c, file)
 	if err != nil {
-		c.JSON(500, gin.H{"error": "Failed to save image"})
+		c.JSON(500, gin.H{"error": err.Error()})
 		return
 	}
 

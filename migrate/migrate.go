@@ -31,7 +31,7 @@ func main() {
 	initializers.DB.Exec("DROP TABLE IF EXISTS visit_responses;")
 	initializers.DB.Exec("DROP TABLE IF EXISTS visit_response_images;")
 
-	initializers.DB.Exec("DROP TABLE IF EXISTS visit_type;")
+	initializers.DB.Exec("DROP TABLE IF EXISTS visit_types;")
 
 	initializers.DB.Exec("PRAGMA foreign_keys = ON;")
 
@@ -89,23 +89,25 @@ func main() {
 	initializers.DB.Create(&visit2) // Save the visit to the database
 
 	//create some responses to the visits
-	visitResponse1.VisitID = visit1.ID
-	visitResponse2.VisitID = visit2.ID
-	initializers.DB.Create(&visitResponse1) // Save the visit response to the database
-	initializers.DB.Create(&visitResponse2) // Save the visit response to the database
+	/*
+		visitResponse1.VisitID = visit1.ID
+		visitResponse2.VisitID = visit2.ID
+		initializers.DB.Create(&visitResponse1) // Save the visit response to the database
+		initializers.DB.Create(&visitResponse2) // Save the visit response to the database
+	*/
 
 	//create some visits to the debitors
 	visit3.UserID = user.ID
-	visit3.TypeID = type3.ID
+	visit3.TypeID = type3.ID // type3.ID
 
 	visit4.UserID = user.ID
-	visit4.TypeID = type4.ID
+	visit4.TypeID = type4.ID //4
 
 	visit5.UserID = user.ID
 	visit5.TypeID = type1.ID
 
 	visit6.UserID = user.ID
-	visit6.TypeID = type2.ID
+	visit6.TypeID = type2.ID // 2
 
 	// add debitors to the visits
 	visit3.Debitors = []models.Debitor{db1}
@@ -118,10 +120,12 @@ func main() {
 	initializers.DB.Create(&visit5) // Save the visit to the database
 	initializers.DB.Create(&visit6)
 
-	visitResponse3.VisitID = visit3.ID
-	visitResponse4.VisitID = visit4.ID
-	initializers.DB.Create(&visitResponse3) // Save the visit response to the database
-	initializers.DB.Create(&visitResponse4) // Save the visit response to the database
+	/*
+		visitResponse3.VisitID = visit3.ID
+		visitResponse4.VisitID = visit4.ID
+		initializers.DB.Create(&visitResponse3) // Save the visit response to the database
+		initializers.DB.Create(&visitResponse4) // Save the visit response to the database
+	*/
 }
 
 // placeholder information
@@ -235,7 +239,7 @@ var visit1 = models.Visit{
 	VisitDate:     time.Now(),
 	VisitTime:     "10:00 AM",
 	Debitors:      []models.Debitor{db1, db2},
-	StatusID:      4,
+	StatusID:      3,
 }
 var visit2 = models.Visit{
 	UserID:        user.ID,
@@ -248,7 +252,7 @@ var visit2 = models.Visit{
 	VisitDate:     time.Now(),
 	VisitTime:     "12:00 AM",
 	Debitors:      []models.Debitor{db2, db3},
-	StatusID:      4,
+	StatusID:      3,
 }
 var visit3 = models.Visit{
 	UserID:        user.ID,
@@ -261,7 +265,7 @@ var visit3 = models.Visit{
 	Sagsnr:        3,
 	VisitDate:     time.Now(),
 	VisitTime:     "12:00 AM",
-	StatusID:      4,
+	StatusID:      3,
 }
 var visit4 = models.Visit{
 	UserID:        user.ID,
@@ -274,7 +278,7 @@ var visit4 = models.Visit{
 	Sagsnr:        4,
 	VisitDate:     time.Now().AddDate(0, 0, 0),
 	VisitTime:     "18:00 AM",
-	StatusID:      4,
+	StatusID:      3,
 }
 var visit5 = models.Visit{
 	UserID:        user.ID,
