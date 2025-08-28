@@ -58,6 +58,7 @@ func start_server() {
 		apiv1.GET("/visits/byId", middleware.RequireAuthUser, api.GetVisitsById)          //query parameter
 		apiv1.GET("/visits/byStatus", middleware.RequireAuthAdmin, api.GetVisitsByStatus) // query parameter
 		apiv1.GET("/visits/debt", middleware.RequireAuthUser, api.DebtInformation)        // query parameter
+		apiv1.DELETE("/visit/byId", middleware.RequireAuthAdmin, api.DeleteVisit)
 
 		apiv1.GET("/visits/AvailableVisit", middleware.RequireAuthAdmin, api.AvailableVisitCreation) // gets visits that can be created
 		apiv1.POST("/visits/create", middleware.RequireAuthAdmin, api.VisitCreation)                 // creates thoses visits

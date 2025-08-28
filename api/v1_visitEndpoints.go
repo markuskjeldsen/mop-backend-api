@@ -328,3 +328,26 @@ func DebtInformation(c *gin.Context) {
 	c.JSON(http.StatusOK, data)
 
 }
+
+func DeleteVisit(c *gin.Context) {
+	dataid := c.Query("id")
+	id, _ := strconv.ParseUint(dataid, 10, 32)
+
+	_, ok := getVerifyUser(c)
+	if !ok {
+		c.JSON(http.StatusInternalServerError, gin.H{})
+		return
+	}
+	var visit models.Visit
+	visit.ID = uint(id)
+
+	result := initializers.DB.Delete(&visit)
+	if result.Error != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": result.Error.Error(),
+		})
+		return
+	}
+
+	c.Status(http.StatusOK)
+}

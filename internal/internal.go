@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"math"
 	"mime/multipart"
 	"os"
 	"path/filepath"
@@ -69,6 +70,36 @@ func SaveFile(c *gin.Context, file *multipart.FileHeader) (string, error) {
 	return filepath, nil
 }
 
+func addImageFit(pdf *fpdf.Fpdf, path string) {
+	// Page size, margins, cursor
+	pw, ph := pdf.GetPageSize()
+	lm, _, rm, _ := pdf.GetMargins()
+	y := pdf.GetY()
+
+	// Bottom margin (via auto page break)
+
+	_, bm := pdf.GetAutoPageBreak() //ab
+
+	maxW := pw - lm - rm
+	maxH := ph - bm - y
+	if maxH <= 0 {
+		pdf.AddPage()
+		y = pdf.GetY()
+		maxH = ph - bm - y
+	}
+
+	// Image natural size (respect DPI)
+	info := pdf.RegisterImageOptions(path, fpdf.ImageOptions{ReadDpi: true})
+	iw, ih := info.Extent()
+
+	scale := math.Min(math.Min(maxW/iw, maxH/ih), 1.0)
+	w, h := iw*scale, ih*scale
+
+	// Draw
+	pdf.ImageOptions(path, lm, y, w, h, false, fpdf.ImageOptions{ReadDpi: true}, 0, "")
+	pdf.SetY(y + h + 2) // move cursor below image
+}
+
 func pdfwrite(pdf *fpdf.Fpdf, message string) {
 	pdf.Cell(float64(len(message))*2.1, 10, message)
 	pdf.Ln(10)
@@ -97,28 +128,53 @@ func PdfRepport(pdf *fpdf.Fpdf, visit models.Visit) {
 
 	// dato tidspunkt og sted for besøget
 	date := visit.VisitResponse.ActDate.Format("2006-01-02")
+	pdfwrite(pdf, "Besøget var af typen: "+visit.Type.Text)
 	pdfwrite(pdf, "Dato og tidspunkt for besøget: "+visit.VisitResponse.ActTime[:8]+" "+date)
 	pdfwrite(pdf, "Besøget tog sted ved "+visit.Address)
 	// svaret for besøget
 	if visit.VisitResponse.AssetAtAddress {
-		if visit.VisitResponse.AssetDamaged {
-			pdfwrite(pdf, "Aktivet var på addressen og var beskadiget")
-		} else {
-			pdfwrite(pdf, "Aktivet var på addressen og var ikke beskadiget")
-		}
+		pdfwrite(pdf, "Aktivet var på addressen")
+	} else if visit.VisitResponse.AssetAtWorkshop {
+		pdfwrite(pdf, "Aktivet var på værksted")
 	} else {
-		pdfwrite(pdf, "Aktivet var ikke på addressen")
+		pdfwrite(pdf, "Aktivets lokation er: "+visit.VisitResponse.AssetLocation)
+	}
+
+	if visit.VisitResponse.AssetDamaged {
+		pdfwrite(pdf, "Aktivet er skadet")
+	} else {
+		pdfwrite(pdf, "Aktivet er ikke skadet")
+	}
+
+	if visit.VisitResponse.AssetCleaned {
+		pdfwrite(pdf, "Aktivet er rent")
+	} else {
+		pdfwrite(pdf, "Aktivet er ikke rent")
+	}
+
+	if visit.VisitResponse.PaymentReceived {
+		pdfwrite(pdf, "Betaling er modtaget")
+	} else {
+		pdfwrite(pdf, "Betaling er ikke modtaget")
+	}
+	pdfwrite(pdf, "Kommentar til aktivet: "+visit.VisitResponse.AssetComments)
+	pdfwrite(pdf, "Kilometer tal: "+fmt.Sprintf("%d", visit.VisitResponse.OdometerKm))
+
+	if visit.VisitResponse.KeysReceived {
+		pdfwrite(pdf, "nøglerne er modtaget")
+	} else if !visit.VisitResponse.KeysReceived {
+		pdfwrite(pdf, "nøglerne er ikke modtaget")
 	}
 
 	if visit.VisitResponse.DebitorIsHome {
 		if visit.VisitResponse.HasWork {
 			pdfwrite(pdf, "Debitor var hjemme, "+
 				"civilstatus:"+string(visit.VisitResponse.CivilStatus)+
-				". Debitor har ikke arbejde")
+				". Debitor har  arbejde")
 		} else {
 			pdfwrite(pdf, "Debitor var hjemme, "+
 				"civilstatus:"+string(visit.VisitResponse.CivilStatus)+
-				". Debitor har arbejde")
+				". Debitor har ikke arbejde")
 		}
 	} else {
 		pdfwrite(pdf, "Debitor var ikke hjemme")
@@ -127,20 +183,69 @@ func PdfRepport(pdf *fpdf.Fpdf, visit models.Visit) {
 	// visit.VisitResponse.PropertyType
 
 	pdfwrite(pdf, "Bolig typen er: "+string(visit.VisitResponse.PropertyType))
-	pdfwrite(pdf, "Standen af huset er:"+string(visit.VisitResponse.MaintenanceStatus))
+	pdfwrite(pdf, "Standen af huset er: "+string(visit.VisitResponse.MaintenanceStatus))
+	pdfwrite(pdf, "Skyldners ejerskabs status er: "+string(visit.VisitResponse.OwnershipStatus))
+
+	pdfwrite(pdf, "Besøgs id: "+fmt.Sprintf("%d", visit.ID))
+	pdfwrite(pdf, "Besøgssvar id: "+fmt.Sprintf("%d", visit.VisitResponse.ID))
+
+	pdfwrite(pdf, "Lat: "+visit.VisitResponse.ActLat+" long: "+visit.VisitResponse.ActLong+" positions sikkerhed: "+visit.VisitResponse.PosAccuracy)
+
+	if visit.VisitResponse.SFSigned {
+		pdfwrite(pdf, "salgsfuldmagt er underskevet")
+	}
+	if visit.VisitResponse.SESigned {
+		pdfwrite(pdf, "salgs-/eftergivelseaftale underskrevet")
+	}
+
+	// børn
+	pdfwrite(pdf, "antal børn under 18: "+fmt.Sprintf("%d", visit.VisitResponse.ChildrenUnder18))
+
+	if visit.VisitResponse.HasWork {
+		pdfwrite(pdf, "skyldner har arbejde")
+		pdfwrite(pdf, "de har stillingen: "+visit.VisitResponse.Position)
+		pdfwrite(pdf, "og skyldner tjener følgende: "+fmt.Sprintf("%f", visit.VisitResponse.Salary))
+
+	} else if !visit.VisitResponse.HasWork {
+		pdfwrite(pdf, "skyldner har ikke arbejde")
+	}
+	pdfwrite(pdf, "skyldner får følgende i pension: "+fmt.Sprintf("%f", visit.VisitResponse.PensionPayment))
+	pdfwrite(pdf, "skyldner får følgende i alt: "+fmt.Sprintf("%f", visit.VisitResponse.IncomePayment))
+	pdfwrite(pdf, "skyldner har følgende a rutte med: "+fmt.Sprintf("%f", visit.VisitResponse.MonthlyDisposableAmount))
+
+	// Write creditor information
+	if visit.VisitResponse.Creditor != "" {
+		pdfwrite(pdf, "Kreditor 1: "+visit.VisitResponse.Creditor)
+		pdfwrite(pdf, "Beløb: "+fmt.Sprintf("%f", visit.VisitResponse.DebtAmount))
+		pdfwrite(pdf, "Aftale: "+visit.VisitResponse.Settlement)
+	}
+
+	if visit.VisitResponse.Creditor2 != "" {
+		pdfwrite(pdf, "Kreditor 2: "+visit.VisitResponse.Creditor2)
+		pdfwrite(pdf, "Beløb: "+fmt.Sprintf("%f", visit.VisitResponse.DebtAmount2))
+		pdfwrite(pdf, "Aftale: "+visit.VisitResponse.Settlement2)
+	}
+
+	if visit.VisitResponse.Creditor3 != "" {
+		pdfwrite(pdf, "Kreditor 3: "+visit.VisitResponse.Creditor3)
+		pdfwrite(pdf, "Beløb: "+fmt.Sprintf("%f", visit.VisitResponse.DebtAmount3))
+		pdfwrite(pdf, "Aftale: "+visit.VisitResponse.Settlement3)
+	}
+
+	pdfwrite(pdf, "kommentarer: "+visit.VisitResponse.Comments)
 
 	// til slut billederne
-	pdf.AddPage()
-	if len(visit.VisitResponse.Images) > 0 {
-		imagepath := visit.VisitResponse.Images[0].ImagePath
-		pdf.Image(imagepath, 10, 10, 0, 0, false, "", 0, "")
+	for _, image := range visit.VisitResponse.Images {
+		pdf.AddPage()
+		addImageFit(pdf, image.ImagePath)
 	}
+
 }
 
 func GeneratePDFVisit(visitID uint) []byte {
 
 	var visit models.Visit
-	initializers.DB.Preload("Debitors").Preload("VisitResponse").Preload("VisitResponse.Images").First(&visit, visitID)
+	initializers.DB.Preload("Type").Preload("Debitors").Preload("VisitResponse").Preload("VisitResponse.Images").First(&visit, visitID)
 
 	re := regexp.MustCompile(`[<>:"/\\|?*\s]`)
 	sanitizedAddress := re.ReplaceAllString(visit.Address, "_")
