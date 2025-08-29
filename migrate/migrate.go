@@ -46,6 +46,7 @@ func main() {
 		&models.LoginAttempt{},
 		&models.AuthAttempt{},
 		&models.VisitType{},
+		&models.ActivityLog{},
 	)
 
 	initializers.DB.Create(&status1)

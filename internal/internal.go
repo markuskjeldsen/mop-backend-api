@@ -2,6 +2,7 @@ package internal
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
@@ -271,4 +272,95 @@ func GeneratePDFVisit(visitID uint) []byte {
 	}
 
 	return buf.Bytes()
+}
+
+func LogUserDelete(actinguser models.User, targetuser models.User) error {
+	prevJSON, err := json.Marshal(targetuser)
+	if err != nil {
+		return err
+	}
+
+	activity := models.ActivityLog{
+		ActingUserID: actinguser.ID,
+		TargetID:     targetuser.ID,
+		ActionType:   "DELETE USER",
+		PrevVal:      prevJSON,
+	}
+	initializers.DB.Create(&activity)
+	return nil
+}
+
+func LogUserCreate(actinguser models.User, targetuser models.User) error {
+	currJSON, err := json.Marshal(targetuser)
+	if err != nil {
+		return err
+	}
+
+	activity := models.ActivityLog{
+		ActingUserID: actinguser.ID,
+		TargetID:     targetuser.ID,
+		CurrentVal:   currJSON,
+		ActionType:   "CREATE USER",
+	}
+
+	initializers.DB.Create(&activity)
+	return nil
+}
+
+func LogUserPatch(actinguser models.User, targetuserPrev models.User, targetuserCurrent models.User) error {
+	prevJSON, err := json.Marshal(targetuserPrev)
+	if err != nil {
+		return err
+	}
+	currJSON, err := json.Marshal(targetuserCurrent)
+	if err != nil {
+		return err
+	}
+
+	activity := models.ActivityLog{
+		ActingUserID: actinguser.ID,
+		TargetID:     targetuserPrev.ID,
+
+		PrevVal:    prevJSON,
+		CurrentVal: currJSON,
+
+		ActionType: "PATCH USER",
+	}
+
+	initializers.DB.Create(&activity)
+	return nil
+}
+
+func LogVisitDelete(actinguser models.User, targetVisit models.Visit) error {
+	prevJSON, err := json.Marshal(targetVisit)
+	if err != nil {
+		return err
+	}
+
+	activity := models.ActivityLog{
+		ActingUserID: actinguser.ID,
+		TargetID:     targetVisit.ID,
+		ActionType:   "DELETE VISIT",
+		PrevVal:      prevJSON,
+	}
+
+	initializers.DB.Create(&activity)
+	return nil
+}
+
+func LogVisitCreate(actinguser models.User, targetVisit models.Visit) error {
+	currJSON, err := json.Marshal(targetVisit)
+	if err != nil {
+		return err
+	}
+
+	activity := models.ActivityLog{
+		ActingUserID: actinguser.ID,
+		TargetID:     targetVisit.ID,
+		CurrentVal:   currJSON,
+		ActionType:   "CREATE VISIT",
+	}
+
+	initializers.DB.Create(&activity)
+	return nil
 }

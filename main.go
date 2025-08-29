@@ -41,9 +41,11 @@ func start_server() {
 		apiv1.GET("/health", api.Hello) // Adding a route to the group
 		apiv1.GET("/verifytoken", middleware.RequireAuthUser, api.Verifytoken)
 
-		apiv1.GET("/users", middleware.RequireAuthAdmin, api.GetUsers) // Adding a route to the group
-		apiv1.GET("/user", middleware.RequireAuthUser, api.GetUser)    // Adding a route to the group
-		apiv1.PATCH("/user", middleware.RequireAuthUser, api.Patch)
+		apiv1.GET("/users", middleware.RequireAuthAdmin, api.GetUsers)          // Adding a route to the group
+		apiv1.GET("/user", middleware.RequireAuthUser, api.GetUser)             // Adding a route to the group
+		apiv1.GET("/users/:id", middleware.RequireAuthUser, api.GetUserByParam) // Adding a route to the group
+		apiv1.PATCH("/users/:id", middleware.RequireAuthUser, api.Patch)
+		apiv1.DELETE("/users/:id", middleware.RequireAuthAdmin, api.DeleteUser)
 
 		apiv1.POST("/register", middleware.RequireAuthAdmin, api.CreateUser)
 		apiv1.POST("/login", middleware.LoginAttemptLog, api.Login)

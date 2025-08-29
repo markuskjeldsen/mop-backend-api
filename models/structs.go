@@ -3,6 +3,7 @@ package models
 import (
 	"time"
 
+	"gorm.io/datatypes"
 	"gorm.io/gorm"
 )
 
@@ -225,4 +226,15 @@ type VisitResponseImage struct {
 	VisitResponseID uint   `json:"visit_response_id"`
 	ImagePath       string `json:"image_path"`
 	OriginalName    string `json:"original_name"`
+}
+
+type ActivityLog struct {
+	gorm.Model
+	ActingUserID uint           `json:"acting_user_id"`
+	TargetID     uint           `json:"target_id"`
+	TargetIDType string         `json:"target_id_type"`
+	ActionType   string         `json:"action_type"`
+	ColumnType   string         `json:"column_type"`
+	PrevVal      datatypes.JSON `json:"prev_val"`
+	CurrentVal   datatypes.JSON `json:"current_val"`
 }

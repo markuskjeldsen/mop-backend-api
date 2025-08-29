@@ -18,6 +18,8 @@ import (
 )
 
 func VisitCreation(c *gin.Context) {
+	user, _ := getVerifyUser(c)
+
 	// this function creates the visits that the user chooses,
 	// the visit is created
 	// and they are then initalized in the database and created as an excel file
@@ -108,7 +110,10 @@ func VisitCreation(c *gin.Context) {
 	}
 
 	fmt.Printf("Created visits count: %d\n", len(createdVisits))
-
+	// logging
+	for _, object := range createdVisits {
+		internal.LogVisitCreate(user, object)
+	}
 	// then return an excel sheet with the visits on it
 	// Generate Excel
 	f := excelize.NewFile()

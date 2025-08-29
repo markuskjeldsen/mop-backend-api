@@ -10,6 +10,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/markuskjeldsen/mop-backend-api/initializers"
+	"github.com/markuskjeldsen/mop-backend-api/internal"
 	"github.com/markuskjeldsen/mop-backend-api/middleware"
 	"github.com/markuskjeldsen/mop-backend-api/models"
 	"golang.org/x/crypto/bcrypt"
@@ -31,7 +32,16 @@ func GetUser(c *gin.Context) {
 		"user": user,
 	})
 }
+func GetUserByParam(c *gin.Context) {
+	user, _ := getVerifyUser(c)
+	id := c.Param("id")
 
+	//var user []models.User
+	initializers.DB.Find(&user, id) // Preload visits for each user
+	user.Password = ""              // Remove password from the response
+
+	c.JSON(200, user)
+}
 func GetUsers(c *gin.Context) {
 	var user []models.User
 	initializers.DB.Where("id != 1").Find(&user) // Preload visits for each user
@@ -45,9 +55,12 @@ func GetUsers(c *gin.Context) {
 }
 
 func CreateUser(c *gin.Context) {
+	actingUser, _ := getVerifyUser(c)
+
 	// get data
 	var user models.User
 	var body struct {
+		FullName string `json:"fullName" form:"fullName" binding:"required"`
 		Username string `json:"username" form:"name" binding:"required"`
 		Password string `json:"password" form:"password" binding:"required"`
 		Email    string `json:"email" form:"email"`
@@ -101,6 +114,7 @@ func CreateUser(c *gin.Context) {
 		user.Rights = models.RightsUser
 	}
 
+	user.Name = body.FullName
 	user.Username = body.Username
 	user.Email = body.Email
 
@@ -114,6 +128,8 @@ func CreateUser(c *gin.Context) {
 		})
 		return
 	}
+
+	internal.LogUserCreate(actingUser, user)
 
 	switch datatype {
 	case "application/json":
@@ -216,39 +232,67 @@ func Logout(c *gin.Context) {
 }
 
 func Patch(c *gin.Context) {
-	var userPatch struct {
-		ID       uint   `json:"ID"`
-		Username string `json:"username,omitempty"`
-		Password string `json:"password,omitempty"`
-		Rights   string `json:"rights,omitempty"`
-		Email    string `json:"email,omitempty"`
-		Phone    string `json:"phone,omitempty"`
-	}
+	actingUser, _ := getVerifyUser(c)
+	id := c.Param("id")
 
+	/*
+		var userPatch struct {
+			Username string `json:"username,omitempty"`
+			Password string `json:"password,omitempty"`
+			Rights   string `json:"rights,omitempty"`
+			Email    string `json:"email,omitempty"`
+			Phone    string `json:"phone,omitempty"`
+		}
+	*/
 	var user models.User
+	var oldUserInfo models.User
 
 	// Bind the JSON to userin
-	if err := c.ShouldBindBodyWithJSON(&userPatch); err != nil {
+	if err := c.ShouldBindBodyWithJSON(&oldUserInfo); err != nil {
 		c.JSON(400, gin.H{"error": "Invalid input"})
 		return
 	}
 
 	// Find the user by ID
-	if err := initializers.DB.First(&user, userPatch.ID).Error; err != nil {
+	if err := initializers.DB.First(&user, id).Error; err != nil {
 		c.JSON(404, gin.H{"error": "User not found"})
 		return
 	}
 
 	//only allow updating chosen fields
 	updates := map[string]interface{}{
-		"Email": userPatch.Email,
-		"Phone": userPatch.Phone,
+		"Email": oldUserInfo.Email,
+		"Phone": oldUserInfo.Phone,
+		"Name":  oldUserInfo.Name,
 	}
+	olduser := user
 
 	// Update the user fields
 	if err := initializers.DB.Model(&user).Updates(updates).Error; err != nil {
 		c.JSON(500, gin.H{"error": "Failed to update user"})
 		return
 	}
+	internal.LogUserPatch(actingUser, olduser, user)
+
 	c.JSON(200, user)
+}
+
+func DeleteUser(c *gin.Context) {
+	actingUser, _ := getVerifyUser(c)
+	var user models.User
+
+	id := c.Param("id")
+	if id == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "missing user id"})
+		return
+	}
+
+	initializers.DB.Find(&user, id)
+	if err := initializers.DB.Delete(&models.User{}, id).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	internal.LogUserDelete(actingUser, user)
+	c.Status(http.StatusNoContent)
 }
