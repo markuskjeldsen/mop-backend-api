@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"os"
 	"strconv"
 	"time"
 
@@ -11,52 +12,55 @@ import (
 	"github.com/markuskjeldsen/mop-backend-api/models"
 )
 
-func ExecuteQuery(server, database string, query string, params ...interface{}) ([]map[string]interface{}, error) {
-	// Connection string: user/password uses SQL Auth; for integrated (Windows) auth, see below
-	connString := fmt.Sprintf("server=%s;database=%s;trusted_connection=yes", server, database)
+func ExecuteQuery(server, database, query string, params ...interface{}) ([]map[string]interface{}, error) {
+	user := os.Getenv("MSSQL_USER")
+	pass := os.Getenv("MSSQL_PASS")
 
-	// Open connection
-	db, err := sql.Open("sqlserver", connString)
+	// Option A: ODBC-style
+	conn := fmt.Sprintf(
+		"server=%s;user id=%s;password=%s;database=%s;encrypt=true;TrustServerCertificate=true;port=1433;connection timeout=5",
+		server, user, pass, database,
+	)
+
+	// Option B: URL-style
+	// conn := fmt.Sprintf("sqlserver://%s:%s@%s:1433?database=%s&encrypt=true&TrustServerCertificate=true",
+	// 	 url.QueryEscape(user), url.QueryEscape(pass), server, database)
+
+	db, err := sql.Open("sqlserver", conn)
 	if err != nil {
 		return nil, err
 	}
 	defer db.Close()
 
-	// Pass parameters to db.Query()
 	rows, err := db.Query(query, params...)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	// Getting columns dynamically
-	columns, err := rows.Columns()
+	cols, err := rows.Columns()
 	if err != nil {
 		return nil, err
 	}
 
-	results := []map[string]interface{}{}
+	var results []map[string]interface{}
 	for rows.Next() {
-		// Create a slice of interfaces to represent each column
-		values := make([]interface{}, len(columns))
-		valuePtrs := make([]interface{}, len(columns))
-		for i := range columns {
-			valuePtrs[i] = &values[i]
+		values := make([]interface{}, len(cols))
+		ptrs := make([]interface{}, len(cols))
+		for i := range cols {
+			ptrs[i] = &values[i]
 		}
-
-		err = rows.Scan(valuePtrs...)
-		if err != nil {
+		if err := rows.Scan(ptrs...); err != nil {
 			return nil, err
 		}
 
 		row := map[string]interface{}{}
-		for i, col := range columns {
-			row[col] = values[i]
+		for i, c := range cols {
+			row[c] = values[i]
 		}
 		results = append(results, row)
 	}
-
-	return results, nil
+	return results, rows.Err()
 }
 
 func FetchDebitorData(debitorNum int64) *models.Debitor {
