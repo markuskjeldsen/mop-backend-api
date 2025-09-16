@@ -55,6 +55,8 @@ func start_server() {
 		apiv1.GET("/user", middleware.RequireAuthUser, api.GetUser)             // Adding a route to the group
 		apiv1.GET("/users/:id", middleware.RequireAuthUser, api.GetUserByParam) // Adding a route to the group
 		apiv1.PATCH("/users/:id", middleware.RequireAuthUser, api.Patch)
+		apiv1.PATCH("/users/:id/password", middleware.RequireAuthUser, api.ChangePassword)
+
 		apiv1.DELETE("/users/:id", middleware.RequireAuthAdmin, api.DeleteUser)
 
 		apiv1.POST("/register", middleware.RequireAuthAdmin, api.CreateUser)

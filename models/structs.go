@@ -61,8 +61,8 @@ const (
 // models/models.go
 type User struct {
 	gorm.Model
-	Name     string     `json:"name" binding:"required" gorm:"not null;uniqueIndex"`
-	Username string     `json:"username" binding:"required" gorm:"not null;uniqueIndex"`
+	Name     string     `json:"name" binding:"required" gorm:"not null;uniqueIndex:ux_users_name_active,where:deleted_at IS NULL"`
+	Username string     `json:"username" binding:"required" gorm:"not null;uniqueIndex:ux_users_username_active,where:deleted_at IS NULL"`
 	Password string     `json:"password" binding:"required" gorm:"not null"`
 	Rights   UserRights `json:"rights" gorm:"default:user"`
 	Email    string     `json:"email"`

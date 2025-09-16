@@ -53,7 +53,7 @@ func LoginAttemptLog(c *gin.Context) {
 	if count >= 5 {
 		attempt.FailureReason = "Too many requests"
 		initializers.DB.Create(&attempt)
-		c.AbortWithStatus(429)
+		c.AbortWithStatus(http.StatusTooManyRequests)
 		return
 	}
 

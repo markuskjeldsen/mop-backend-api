@@ -16,6 +16,7 @@ var statusText = map[int]string{
 	403: "Forbidden",
 	404: "Not Found",
 	422: "Unprocessable Entity",
+	429: "Too Many Requests",
 	500: "Internal Server Error",
 	// Add more as needed
 }

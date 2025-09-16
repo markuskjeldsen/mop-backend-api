@@ -296,3 +296,65 @@ func DeleteUser(c *gin.Context) {
 	internal.LogUserDelete(actingUser, user)
 	c.Status(http.StatusNoContent)
 }
+
+func ChangePassword(c *gin.Context) {
+	actingUser, _ := getVerifyUser(c)
+	var user models.User
+
+	var body struct {
+		NewPassword string `json:"new_password" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&body); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid payload"})
+		return
+	}
+
+	id := c.Param("id")
+	if id == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "missing user id"})
+		return
+	}
+
+	if err := initializers.DB.First(&user, id).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	if actingUser.ID != user.ID && actingUser.Rights != models.RightsDeveloper {
+		c.JSON(http.StatusForbidden, gin.H{"message": "Cannot change another users password"})
+		return
+	}
+
+	/* validate password if the request was made by api TODO:make this function
+	if !validateStrength(body.NewPassword) { // implement same rules as FE
+		c.JSON(http.StatusBadRequest, gin.H{"error": "weak password"})
+		return
+	}
+	*/
+
+	// changes the users password
+
+	// calculate the hash
+	hash, err := bcrypt.GenerateFromPassword([]byte(body.NewPassword), 10)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status": "couldnt generate password hash",
+			"error":  err.Error(),
+		})
+		return
+	}
+	olduser := user
+
+	// assign hash to user.password and merge with database
+	result := initializers.DB.Model(&user).Update("password", string(hash))
+	if result.Error != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status": "Error with Database",
+			"error":  result.Error.Error(),
+		})
+		return
+	}
+
+	internal.LogUserPatch(actingUser, olduser, user)
+	c.Status(http.StatusNoContent)
+}
