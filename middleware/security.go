@@ -50,7 +50,7 @@ func LoginAttemptLog(c *gin.Context) {
 	initializers.DB.Model(&models.LoginAttempt{}).
 		Where("username = ? AND ip = ? AND created_at > ?", body.Username, addr, time.Now().Add(-12*time.Hour)).
 		Count(&count)
-	if count >= 5 {
+	if count >= 100 {
 		attempt.FailureReason = "Too many requests"
 		initializers.DB.Create(&attempt)
 		c.AbortWithStatus(http.StatusTooManyRequests)
