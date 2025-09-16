@@ -61,10 +61,10 @@ const (
 // models/models.go
 type User struct {
 	gorm.Model
-	Name     string     `json:"name" binding:"required" gorm:"not null"`
-	Username string     `json:"username" binding:"required" gorm:"not null"`
+	Name     string     `json:"name" binding:"required" gorm:"not null;uniqueIndex"`
+	Username string     `json:"username" binding:"required" gorm:"not null;uniqueIndex"`
 	Password string     `json:"password" binding:"required" gorm:"not null"`
-	Rights   UserRights `json:"rights" gorm:"default:user"` // user, admin, developer
+	Rights   UserRights `json:"rights" gorm:"default:user"`
 	Email    string     `json:"email"`
 	Phone    string     `json:"phone"`
 	Visits   []Visit    `json:"visits" gorm:"foreignKey:UserID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
