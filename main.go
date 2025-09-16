@@ -34,7 +34,17 @@ func start_server() {
 	r.Use(middleware.RequestLogger())
 	r.Use(middleware.CORSMiddleware)
 	r.Use(middleware.GeoIPBlocker("DK", "./static/GeoLite2-Country.mmdb"))
-	r.SetTrustedProxies(nil)
+	// Trust your nginx proxy IP(s) or the private networks where your proxies live.
+	// If nginx connects from 127.0.0.1 (same host):
+	if err := r.SetTrustedProxies([]string{
+		"127.0.0.1",  // loopback
+		"10.0.0.0/8", // typical private ranges (optional)
+		"172.16.0.0/12",
+		"192.168.0.0/16",
+		"::1",
+	}); err != nil {
+		panic(err)
+	}
 
 	apiv1 := r.Group("/api/v1") // Grouping routes under /api/v1
 	{
