@@ -9,3 +9,5 @@ uploads
 pdfs
 *.pdf
 data.db*
+.vscode
+.vscode/*

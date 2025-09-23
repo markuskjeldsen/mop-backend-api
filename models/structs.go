@@ -77,12 +77,15 @@ type AuthAttempt struct {
 }
 
 type LoginAttempt struct {
-	gorm.Model
-	UserID        uint   `json:"user_id" gorm:"not null"`
-	Username      string `json:"username" gorm:"not null"`
-	IP            string `gorm:"size:45;not null"`
-	Successful    bool   `gorm:"not null"`
-	FailureReason string `json:"failure_reason"`
+	ID            uint      `gorm:"primarykey"`
+	CreatedAt     time.Time `gorm:"index:idx_created"`
+	UpdatedAt     time.Time
+	DeletedAt     gorm.DeletedAt `gorm:"index"`
+	UserID        uint           `json:"user_id" gorm:"not null,index:idx_user_created,priority:1"`
+	Username      string         `json:"username" gorm:"not null,index:idx_ip_created,priority:1"`
+	IP            string         `gorm:"size:45;not null"`
+	Successful    bool           `gorm:"not null"`
+	FailureReason string         `json:"failure_reason"`
 }
 
 type Debitor struct {

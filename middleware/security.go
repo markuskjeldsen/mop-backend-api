@@ -38,6 +38,7 @@ func LoginAttemptLog(c *gin.Context) {
 		return
 	}
 
+	// setting up some logging
 	c.Set("body", body)
 	addr := c.ClientIP()
 	var attempt models.LoginAttempt
@@ -46,11 +47,16 @@ func LoginAttemptLog(c *gin.Context) {
 	attempt.Successful = false
 	attempt.FailureReason = "Failed to bind values"
 
-	var count int64
+	var userCount, ipCount int64
 	initializers.DB.Model(&models.LoginAttempt{}).
-		Where("username = ? AND ip = ? AND created_at > ?", body.Username, addr, time.Now().Add(-12*time.Hour)).
-		Count(&count)
-	if count >= 100 {
+		Where("username = ?  AND created_at > ?", body.Username, time.Now().Add(-12*time.Hour)).
+		Count(&userCount)
+
+	initializers.DB.Model(&models.LoginAttempt{}).
+		Where("ip = ? AND created_at > ?", addr, time.Now().Add(-12*time.Hour)).
+		Count(&ipCount)
+
+	if userCount >= 20 || ipCount >= 30 {
 		attempt.FailureReason = "Too many requests"
 		initializers.DB.Create(&attempt)
 		c.AbortWithStatus(http.StatusTooManyRequests)

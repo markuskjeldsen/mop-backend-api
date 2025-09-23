@@ -1,6 +1,10 @@
 package main
 
 import (
+	"fmt"
+	"log"
+	"os"
+	"strconv"
 	"time"
 
 	"github.com/markuskjeldsen/mop-backend-api/initializers"
@@ -8,13 +12,59 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+func usage() {
+	fmt.Fprintf(os.Stderr, `usage:
+  %s automigrate
+  %s resetpassword <id>
+  %s fullreset
+
+examples:
+  %s resetpassword 123
+`, os.Args[0], os.Args[0], os.Args[0], os.Args[0])
+}
+
 func init() {
 	initializers.LoadEnvVariables()
 	initializers.ConnectToDB()
 }
 
 func main() {
+	log.SetFlags(0) // cleaner log output
 
+	if len(os.Args) < 2 || os.Args[1] == "-h" || os.Args[1] == "--help" {
+		usage()
+		os.Exit(2)
+	}
+
+	switch os.Args[1] {
+	case "automigrate":
+		MigrateTables()
+
+	case "resetpassword":
+		if len(os.Args) < 3 {
+			log.Printf("missing id for resetpassword")
+			usage()
+			os.Exit(2)
+		}
+
+		// Parse with platform int size to avoid overflow on 32-bit builds.
+		idU, err := strconv.ParseUint(os.Args[2], 10, strconv.IntSize)
+		if err != nil {
+			log.Fatalf("invalid id %q: %v", os.Args[2], err)
+		}
+		ResetPassword(uint(idU))
+
+	case "fullreset":
+		fullreset()
+
+	default:
+		log.Printf("unknown command: %s", os.Args[1])
+		usage()
+		os.Exit(2)
+	}
+}
+
+func fullreset() {
 	initializers.DB.Exec("PRAGMA foreign_keys = OFF;")
 	initializers.DB.Exec("DROP TABLE IF EXISTS users;")
 
@@ -127,6 +177,7 @@ func main() {
 		initializers.DB.Create(&visitResponse3) // Save the visit response to the database
 		initializers.DB.Create(&visitResponse4) // Save the visit response to the database
 	*/
+
 }
 
 // placeholder information
