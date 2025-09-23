@@ -196,7 +196,7 @@ func Login(c *gin.Context) {
 	}
 
 	if os.Getenv("PRODUCTION") == "true" {
-		c.SetCookie("Authorization", tokenString, 3600*24*7, "/", "mopsrv03", true, true) // should be true, true in prod
+		c.SetCookie("Authorization", tokenString, 3600*24*7, "/", os.Getenv("DOMAIN"), true, true) // should be true, true in prod
 		c.SetSameSite(http.SameSiteLaxMode)
 	} else {
 		//          name            value         age     path domain secure, httpOnly
