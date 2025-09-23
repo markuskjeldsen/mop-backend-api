@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/markuskjeldsen/mop-backend-api/api"
@@ -28,6 +29,7 @@ func test() {
 }
 
 func start_server() {
+	fmt.Print(time.Now().Format("2006/01/02-15:04:05"))
 	fmt.Println("Starting server...")
 
 	r := gin.New() // was gin.Default()
