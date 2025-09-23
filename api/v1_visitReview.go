@@ -22,8 +22,19 @@ func VisitPDF(c *gin.Context) {
 		})
 		return
 	}
+	// does the actual visit have a response?
+	var visitcheck models.Visit
+	initializers.DB.Preload("VisitResponse").First(&visitcheck, visitID)
+	if visitcheck.VisitResponse == nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "The given visit does not have a visitresponse",
+			"id":    visitID,
+		})
+		return
+	}
 
 	pdfBytes := internal.GeneratePDFVisit(uint(visitID))
+
 	var visit models.Visit
 	initializers.DB.First(&visit, visitID)
 	filename := "id" + strconv.Itoa(int(visit.ID)) + "_sagsnr" + strconv.Itoa(int(visit.Sagsnr)) + ".pdf"

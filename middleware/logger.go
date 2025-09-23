@@ -2,9 +2,11 @@ package middleware
 
 import (
 	"fmt"
+	"net/http"
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/markuskjeldsen/mop-backend-api/models"
 )
 
 var statusText = map[int]string{
@@ -23,28 +25,30 @@ var statusText = map[int]string{
 
 func RequestLogger() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// Start time
 		start := time.Now()
-
-		// Process request
 		c.Next()
 
-		// End time
-		duration := time.Since(start)
-
-		// Get status code and description
 		status := c.Writer.Status()
-		desc, ok := statusText[status]
-		if !ok {
+		desc := http.StatusText(status)
+		if desc == "" {
 			desc = "Unknown Status"
 		}
 
-		// Print log line
-		fmt.Printf("[GIN] %s | %d - %s | %v | %s | %s %q\n",
+		username := "-"
+		if v, ok := c.Get("user"); ok {
+			if u, ok := v.(models.User); ok && u.Name != "" {
+				username = u.Username
+			}
+		}
+
+		fmt.Printf(
+			"[GIN] %s | user=%s | %3d %s | %v | ip=%s | %s %q\n",
 			time.Now().Format("2006/01/02 - 15:04:05"),
+			username,
 			status, desc,
-			duration,
+			time.Since(start),
 			c.ClientIP(),
-			c.Request.Method, c.Request.URL.Path)
+			c.Request.Method, c.Request.URL.Path,
+		)
 	}
 }

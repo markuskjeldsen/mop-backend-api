@@ -8,3 +8,4 @@ static
 uploads
 pdfs
 *.pdf
+data.db*
