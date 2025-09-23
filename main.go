@@ -102,8 +102,6 @@ func start_server() {
 	if port == "" {
 		port = "8000"
 	}
-	fmt.Println("ALLOW_ORIGIN:", os.Getenv("ALLOW_ORIGIN"))
-	fmt.Printf("Server is running on port %s\n", port)
 	if err := r.Run(":" + port); err != nil {
 		fmt.Printf("Server error: %v\n", err)
 	} else {

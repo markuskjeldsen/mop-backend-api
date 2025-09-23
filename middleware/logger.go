@@ -42,8 +42,8 @@ func RequestLogger() gin.HandlerFunc {
 		}
 
 		fmt.Printf(
-			"[GIN] %s | user=%s | %3d %s | %v | ip=%s | %s %q\n",
-			time.Now().Format("2006/01/02 - 15:04:05"),
+			"%s | user=%s | %3d %s | %v | %s | %s %q\n",
+			time.Now().Format("2006/01/02-15:04:05"),
 			username,
 			status, desc,
 			time.Since(start),
