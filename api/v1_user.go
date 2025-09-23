@@ -97,7 +97,7 @@ func CreateUser(c *gin.Context) {
 		}
 	}
 
-	hash, err := bcrypt.GenerateFromPassword([]byte(body.Password), 10)
+	hash, err := bcrypt.GenerateFromPassword([]byte(body.Password), 14)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status": "couldnt generate password hash",
@@ -335,7 +335,7 @@ func ChangePassword(c *gin.Context) {
 	// changes the users password
 
 	// calculate the hash
-	hash, err := bcrypt.GenerateFromPassword([]byte(body.NewPassword), 10)
+	hash, err := bcrypt.GenerateFromPassword([]byte(body.NewPassword), 14)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status": "couldnt generate password hash",
