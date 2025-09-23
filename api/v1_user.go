@@ -225,7 +225,9 @@ func Login(c *gin.Context) {
 
 func Logout(c *gin.Context) {
 	// remove the cookie
-	c.SetCookie("Authorization", "", -1, "", "", false, true)
+
+	c.SetCookie("Authorization", "", 0, "/", os.Getenv("DOMAIN"), true, true) // should be true, true in prod
+	c.SetSameSite(http.SameSiteLaxMode)
 	c.JSON(http.StatusOK, gin.H{
 		"message": "sucessfully logged out",
 	})
