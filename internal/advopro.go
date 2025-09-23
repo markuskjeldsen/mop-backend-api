@@ -12,6 +12,39 @@ import (
 	"github.com/markuskjeldsen/mop-backend-api/models"
 )
 
+func toString(v interface{}) string {
+	if v == nil {
+		return ""
+	}
+	switch t := v.(type) {
+	case string:
+		return t
+	case []byte:
+		return string(t)
+	default:
+		return fmt.Sprint(t)
+	}
+}
+
+func toTime(v interface{}) time.Time {
+	if v == nil {
+		return time.Time{}
+	}
+	switch t := v.(type) {
+	case time.Time:
+		return t
+	case []byte:
+		s := string(t)
+		tt, _ := time.Parse(time.RFC3339, s)
+		return tt
+	case string:
+		tt, _ := time.Parse(time.RFC3339, t)
+		return tt
+	default:
+		return time.Time{}
+	}
+}
+
 func ExecuteQuery(server, database, query string, params ...interface{}) ([]map[string]interface{}, error) {
 	user := os.Getenv("MSSQL_USER")
 	pass := os.Getenv("MSSQL_PASS")
@@ -132,6 +165,8 @@ type DebtRow struct {
 	KreditorHovedstol     float64
 	RestgeldVedBrev       float64
 	SumIndbetalingVedBrev float64
+	Fordringsbeskrivelser string
+	Sagsfremstillinger    string
 }
 
 func CurrentDebtCase(sagsnr uint) []DebtRow {
@@ -145,10 +180,12 @@ func CurrentDebtCase(sagsnr uint) []DebtRow {
 		row := DebtRow{
 			SumIndbetalinger:      byteToFloat(debt["SumIndbetalinger"].([]byte)),
 			RestgeldAntaget:       byteToFloat(debt["restgeldAntaget"].([]byte)),
-			RestanceDato:          debt["RestanceDato"].(time.Time), // adjust type if needed!
+			RestanceDato:          toTime(debt["RestanceDato"]), // adjust type if needed!
 			KreditorHovedstol:     byteToFloat(debt["KreditorHovedstol"].([]byte)),
 			RestgeldVedBrev:       byteToFloat(debt["restgeldVedBrev"].([]byte)),
 			SumIndbetalingVedBrev: byteToFloat(debt["SumIndbetalingVedBrev"].([]byte)),
+			Fordringsbeskrivelser: toString(debt["Fordringsbeskrivelser"]),
+			Sagsfremstillinger:    toString(debt["Sagsfremstillinger"]),
 		}
 
 		result = append(result, row)

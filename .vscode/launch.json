@@ -16,7 +16,7 @@
       "mode": "auto",
       "program": "${workspaceFolder}/migrate", // points to the folder (package main)
       "cwd": "${workspaceFolder}",
-      "args": ["resetpassword", "2"]
+      "args": ["fullreset"]
     }
   ]
 }

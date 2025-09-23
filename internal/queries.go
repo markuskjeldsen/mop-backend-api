@@ -48,7 +48,7 @@ where
 	d.DebitorId = @p1
 `
 
-const debtInfo = `DECLARE @sagsnr INT = 511184;
+const debtInfo = `DECLARE @sagsnr INT = @p1;
 
 WITH FilteredIndbetalinger AS (
     SELECT
@@ -100,7 +100,8 @@ SELECT
 FROM
     Deduplicated
 GROUP BY
-    klientnr, Sagsnr, FordringId, FundamentId,ForlobId)
+    klientnr, Sagsnr, FordringId, FundamentId,ForlobId
+)
 
 
 select
@@ -109,13 +110,17 @@ select
 	b.RestanceDato,
 	b.KreditorHovedstol,
 	brev.Restgeld as 'restgeldVedBrev',
-	brev.Indbetalt as 'SumIndbetalingVedBrev'
+	brev.Indbetalt as 'SumIndbetalingVedBrev',
+    INKF.Beskrivelse as 'Fordringsbeskrivelser',
+    INKF.Sagsfremstilling as 'Sagsfremstillinger'
 from
 	InkassoFordringBeregnPr(GETDATE()) b
 left JOIN
 	Indbetaling i on  b.ForlobId = i.ForlobId 
 left join
 	apFlet.vw110_Brev010_ny1 brev ON b.Sagsnr = brev.Sagsnr 
+left join
+    vwInkassoFordring INKF ON b.FordringId = INKF.FordringId
 where
 	b.Sagsnr = @sagsnr
 `
