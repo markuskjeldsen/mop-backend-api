@@ -112,8 +112,16 @@ func GeoIPBlocker(allowedCountry string, dbFile string) gin.HandlerFunc {
 		}
 
 		record, err := db.Country(ip)
-		if err != nil || record == nil || record.Country.IsoCode != allowedCountry {
-			fmt.Println("IP:", ip, "Country:", record.Country.IsoCode)
+		if err != nil {
+			c.AbortWithStatusJSON(500, gin.H{"error": "geo lookup failed"})
+			return
+		}
+		if record == nil || record.Country.IsoCode != allowedCountry {
+			name := record.Country.Names["en"] // or pick from Accept-Language
+			if name == "" {
+				name = record.Country.IsoCode
+			}
+			fmt.Printf("IP: %s Country: %s (%s)\n", ip, name, record.Country.IsoCode)
 			c.AbortWithStatusJSON(403, gin.H{"error": "Access forbidden"})
 			return
 		}
