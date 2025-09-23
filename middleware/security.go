@@ -65,8 +65,8 @@ func LoginAttemptLog(c *gin.Context) {
 
 func isLocalIP(ip net.IP) bool {
 	// Loopback
-	strIp := ip.To4()
-	fmt.Println(strIp)
+	//strIp := ip.To4()
+	//fmt.Println(strIp)
 	if ip.IsLoopback() {
 		return true
 	}

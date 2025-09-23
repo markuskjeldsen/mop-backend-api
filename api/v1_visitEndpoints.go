@@ -120,14 +120,14 @@ func GetVisitTypes(c *gin.Context) {
 }
 
 func CreatedVisits(c *gin.Context) {
-	user, ok := getVerifyUser(c)
+	_, ok := getVerifyUser(c) //user , ok
 	if !ok {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"message": "User could not be found from the token",
 		})
 		return
 	}
-	fmt.Println(user.Username)
+	//fmt.Println(user.Username)
 	var planned []models.Visit
 	result := initializers.DB.
 		Preload("Type").
