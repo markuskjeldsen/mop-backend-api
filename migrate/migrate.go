@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/markuskjeldsen/mop-backend-api/initializers"
@@ -23,6 +24,10 @@ examples:
 `, os.Args[0], os.Args[0], os.Args[0], os.Args[0])
 }
 
+// go run .\migrate\migrate.go automigrate
+// go run .\migrate\migrate.go resetpassword <id>
+// go run .\migrate\migrate.go fullreset
+
 func init() {
 	initializers.LoadEnvVariables()
 	initializers.ConnectToDB()
@@ -38,7 +43,7 @@ func main() {
 
 	switch os.Args[1] {
 	case "automigrate":
-		MigrateTables()
+		migrateTables()
 
 	case "resetpassword":
 		if len(os.Args) < 3 {
@@ -52,7 +57,7 @@ func main() {
 		if err != nil {
 			log.Fatalf("invalid id %q: %v", os.Args[2], err)
 		}
-		ResetPassword(uint(idU))
+		resetPassword(uint(idU))
 
 	case "fullreset":
 		fullreset()
@@ -62,6 +67,44 @@ func main() {
 		usage()
 		os.Exit(2)
 	}
+}
+
+func migrateTables() {
+	initializers.DB.AutoMigrate(
+		&models.User{},
+		&models.Debitor{},
+		&models.Visit{},
+		&models.VisitResponse{},
+		&models.VisitStatus{},
+		&models.VisitStatusLog{},
+		&models.VisitResponseImage{},
+		&models.LoginAttempt{},
+		&models.AuthAttempt{},
+		&models.VisitType{},
+		&models.ActivityLog{},
+	)
+}
+
+func resetPassword(id uint) {
+	fmt.Println("id:", id)
+	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte("pass"), 14)
+	var user models.User
+	user.ID = uint(id)
+	initializers.DB.First(&user)
+	fmt.Println("name: ", user.Name)
+	fmt.Print("confirm y/n: ")
+	var resp string
+	n, err := fmt.Scanf("%s", &resp)
+	if err != nil || n != 1 {
+		log.Fatalf("failed to read input: %v", err)
+	}
+	resp = strings.ToLower(strings.TrimSpace(resp))
+	if resp != "y" && resp != "yes" {
+		fmt.Println("aborted")
+		return
+	}
+
+	initializers.DB.Model(&user).Update("password", string(hashedPassword))
 }
 
 func fullreset() {

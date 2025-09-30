@@ -157,11 +157,12 @@ type VisitResponse struct {
 	VisitID uint `json:"visit_id" binding:"required" gorm:"not null;unique"`
 
 	// actual data
-	ActDate     time.Time `json:"actual_date" binding:"required"`
-	ActTime     string    `json:"actual_time" binding:"required"`
-	ActLat      string    `json:"actual_latitude" binding:"required"`
-	ActLong     string    `json:"actual_longitude" binding:"required"`
-	PosAccuracy string    `json:"pos_accuracy" binding:"required"`
+	ActDate     time.Time     `json:"actual_date" binding:"required"`
+	ActTime     string        `json:"actual_time" binding:"required"`
+	ActLat      string        `json:"actual_latitude" binding:"required"`
+	ActLong     string        `json:"actual_longitude" binding:"required"`
+	PosAccuracy string        `json:"pos_accuracy" binding:"required"`
+	Duration    time.Duration `json:"duration"`
 
 	// response data
 	DebitorIsHome   bool   `json:"debitor_is_home"`
