@@ -92,12 +92,12 @@ func start_server() {
 		apiv1.POST("visit/reviewed", middleware.RequireAuthAdmin, api.ReviewedVisit)
 	}
 
-	r.StaticFile("/", "./static/index.html")
-	r.StaticFile("/favicon-dark.ico", "./static/favicon-dark.ico")
-	r.StaticFile("/favicon-light.ico", "./static/favicon-light.ico")
-	r.Static("/assets", "./static/assets/")
+	r.StaticFile("/", "./public/index.html")
+	r.StaticFile("/favicon-dark.ico", "./public/favicon-dark.ico")
+	r.StaticFile("/favicon-light.ico", "./public/favicon-light.ico")
+	r.Static("/assets", "./public/assets/")
 	r.NoRoute(func(c *gin.Context) {
-		c.File("./static/index.html")
+		c.File("./public/index.html")
 	})
 
 	port := os.Getenv("PORT")

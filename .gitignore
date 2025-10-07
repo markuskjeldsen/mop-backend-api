@@ -5,6 +5,7 @@
 *.sh
 *mop-backend-api*
 static
+public
 uploads
 pdfs
 *.pdf

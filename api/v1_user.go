@@ -249,6 +249,8 @@ func Patch(c *gin.Context) {
 	var user models.User
 	var oldUserInfo models.User
 
+	oldUserInfo.Password = " "
+
 	// Bind the JSON to userin
 	if err := c.ShouldBindBodyWithJSON(&oldUserInfo); err != nil {
 		c.JSON(400, gin.H{"error": "Invalid input"})
