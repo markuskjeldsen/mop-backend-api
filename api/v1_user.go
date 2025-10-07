@@ -269,6 +269,16 @@ func Patch(c *gin.Context) {
 		"Phone": oldUserInfo.Phone,
 		"Name":  oldUserInfo.Name,
 	}
+
+	if actingUser.Rights == models.RightsDeveloper {
+		updates = map[string]interface{}{
+			"Email":  oldUserInfo.Email,
+			"Phone":  oldUserInfo.Phone,
+			"Name":   oldUserInfo.Name,
+			"Rights": oldUserInfo.Rights,
+		}
+	}
+
 	olduser := user
 
 	// Update the user fields
