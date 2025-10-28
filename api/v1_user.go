@@ -237,23 +237,18 @@ func Patch(c *gin.Context) {
 	actingUser, _ := getVerifyUser(c)
 	id := c.Param("id")
 
-	/*
-		var userPatch struct {
-			Username string `json:"username,omitempty"`
-			Password string `json:"password,omitempty"`
-			Rights   string `json:"rights,omitempty"`
-			Email    string `json:"email,omitempty"`
-			Phone    string `json:"phone,omitempty"`
-		}
-	*/
+	var userPatch struct {
+		Name   string `json:"name"`
+		Rights string `json:"rights,omitempty"`
+		Email  string `json:"email,omitempty"`
+		Phone  string `json:"phone,omitempty"`
+	}
 	var user models.User
-	var oldUserInfo models.User
-
-	oldUserInfo.Password = " "
 
 	// Bind the JSON to userin
-	if err := c.ShouldBindBodyWithJSON(&oldUserInfo); err != nil {
+	if err := c.ShouldBindBodyWithJSON(&userPatch); err != nil {
 		c.JSON(400, gin.H{"error": "Invalid input"})
+		fmt.Println(err.Error())
 		return
 	}
 
@@ -265,17 +260,17 @@ func Patch(c *gin.Context) {
 
 	//only allow updating chosen fields
 	updates := map[string]interface{}{
-		"Email": oldUserInfo.Email,
-		"Phone": oldUserInfo.Phone,
-		"Name":  oldUserInfo.Name,
+		"Email": userPatch.Email,
+		"Phone": userPatch.Phone,
+		"Name":  userPatch.Name,
 	}
 
 	if actingUser.Rights == models.RightsDeveloper {
 		updates = map[string]interface{}{
-			"Email":  oldUserInfo.Email,
-			"Phone":  oldUserInfo.Phone,
-			"Name":   oldUserInfo.Name,
-			"Rights": oldUserInfo.Rights,
+			"Email":  userPatch.Email,
+			"Phone":  userPatch.Phone,
+			"Name":   userPatch.Name,
+			"Rights": userPatch.Rights,
 		}
 	}
 
