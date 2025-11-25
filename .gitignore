@@ -6,9 +6,11 @@
 *mop-backend-api*
 static
 public
+public-mobile
 uploads
 pdfs
 *.pdf
 data.db*
 .vscode
 .vscode/*
+internal/templates

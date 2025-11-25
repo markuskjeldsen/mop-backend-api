@@ -195,14 +195,8 @@ func Login(c *gin.Context) {
 		return
 	}
 
-	if os.Getenv("PRODUCTION") == "true" {
-		c.SetCookie("Authorization", tokenString, 3600*24*7, "/", os.Getenv("DOMAIN"), true, true) // should be true, true in prod
-		c.SetSameSite(http.SameSiteLaxMode)
-	} else {
-		//          name            value         age     path domain secure, httpOnly
-		c.SetCookie("Authorization", tokenString, 3600*17, "/", os.Getenv("ALLOW_ORIGIN"), false, true) // should be true, true in prod
-		c.SetSameSite(http.SameSiteNoneMode)
-	}
+	c.SetCookie("Authorization", tokenString, 3600*24*7, "/", os.Getenv("DOMAIN"), true, true) // should be true, true in prod
+	c.SetSameSite(http.SameSiteLaxMode)
 	datatype := c.ContentType()
 
 	switch datatype {

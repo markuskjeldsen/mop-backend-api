@@ -7,6 +7,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/markuskjeldsen/mop-backend-api/api"
+	"github.com/markuskjeldsen/mop-backend-api/api2"
 	"github.com/markuskjeldsen/mop-backend-api/initializers"
 	"github.com/markuskjeldsen/mop-backend-api/internal"
 	"github.com/markuskjeldsen/mop-backend-api/middleware"
@@ -92,6 +93,53 @@ func start_server() {
 		apiv1.POST("visit/reviewed", middleware.RequireAuthAdmin, api.ReviewedVisit)
 	}
 
+	// apiv2 is for the PWA
+	apiv2 := r.Group("/api/v2") // Grouping routes under /api/v1
+	{
+		apiv2.GET("/health", api.Hello) // Adding a route to the group
+		apiv2.GET("/verifytoken", middleware.RequireAuthUser, api.Verifytoken)
+
+		apiv2.GET("/users", middleware.RequireAuthAdmin, api.GetUsers)          // Adding a route to the group
+		apiv2.GET("/user", middleware.RequireAuthUser, api.GetUser)             // Adding a route to the group
+		apiv2.GET("/users/:id", middleware.RequireAuthUser, api.GetUserByParam) // Adding a route to the group
+		apiv2.PATCH("/users/:id", middleware.RequireAuthUser, api.Patch)
+		apiv2.PATCH("/users/:id/password", middleware.RequireAuthUser, api.ChangePassword)
+
+		apiv2.DELETE("/users/:id", middleware.RequireAuthAdmin, api.DeleteUser)
+
+		apiv2.POST("/register", middleware.RequireAuthAdmin, api.CreateUser)
+		apiv2.POST("/login", middleware.LoginAttemptLog, api.Login)
+		apiv2.POST("/logout", middleware.RequireAuthUser, api.Logout)
+
+		apiv2.GET("/visit-response/all", middleware.RequireAuthUser, api.Visit_responses)         // get all the responses
+		apiv2.POST("/visit-response/create", middleware.RequireAuthUser, api.CreateVisitResponse) // make a response
+		apiv2.POST("/visit-response/:id/images", middleware.RequireAuthUser, api.UploadVisitImage)
+
+		apiv2.GET("/visits", middleware.RequireAuthUser, api2.GetVisits)
+
+		apiv2.GET("/visits/types", api.GetVisitTypes)
+		apiv2.GET("/visits/byId", middleware.RequireAuthUser, api.GetVisitsById)          //query parameter
+		apiv2.GET("/visits/byStatus", middleware.RequireAuthAdmin, api.GetVisitsByStatus) // query parameter
+		apiv2.GET("/visits/debt", middleware.RequireAuthUser, api.DebtInformation)        // query parameter
+		apiv2.DELETE("/visit/byId", middleware.RequireAuthAdmin, api.DeleteVisit)
+
+		apiv2.GET("/visits/AvailableVisit", middleware.RequireAuthAdmin, api.AvailableVisitCreation) // gets visits that can be created
+		apiv2.POST("/visits/create", middleware.RequireAuthAdmin, api.VisitCreation)                 // creates thoses visits
+		apiv2.GET("/visits/create", middleware.RequireAuthAdmin, api.CreatedVisits)                  // retrives the created visits that have not yet been planned
+
+		apiv2.POST("/visits/visitfile", middleware.RequireAuthAdmin, api.VisitFile)     // generates a visit excel file so the visits can be planned without making another visit
+		apiv2.POST("/visits/plan", middleware.RequireAuthAdmin, api.PlanVisit)          // here visits are planned
+		apiv2.GET("/visits/planned", middleware.RequireAuthAdmin, api.PlannedVisits)    // here are the planned visits
+		apiv2.PATCH("/visits/planned/:id", middleware.RequireAuthAdmin, api.PatchVisit) // here are the planned visits
+
+		//send the letters
+		apiv2.POST("/visit/letterSent", middleware.RequireAuthAdmin, api.VisitLetterSent) // remember GetQuery("id")
+
+		apiv2.GET("/visit/pdf", middleware.RequireAuthAdmin, api.VisitPDF)
+		apiv2.POST("visit/reviewed", middleware.RequireAuthAdmin, api.ReviewedVisit)
+	}
+
+	// the desktop frontend
 	r.StaticFile("/", "./public/index.html")
 	r.StaticFile("/favicon-dark.ico", "./public/favicon-dark.ico")
 	r.StaticFile("/favicon-light.ico", "./public/favicon-light.ico")
@@ -99,6 +147,22 @@ func start_server() {
 	r.NoRoute(func(c *gin.Context) {
 		c.File("./public/index.html")
 	})
+
+	// the mobile frontend
+	mobile := r.Group("/mobile")
+	{
+		mobile.StaticFile("", "./public-mobile/index.html")
+		mobile.StaticFile("/", "./public-mobile/index.html")
+		mobile.Static("/assets", "./public-mobile/assets/")
+		mobile.StaticFile("/manifest.json", "./public-mobile/manifest.json")
+		mobile.StaticFile("/service-worker.js", "./public-mobile/service-worker.js")
+		mobile.StaticFile("/icon-192x192.png", "./public-mobile/icon-192x192.png") // Example PWA icons
+		// a catch all which dosnt work for now
+
+		/*mobile.GET("/*path", func(c *gin.Context) {
+			c.File("./public-mobile/index.html")
+		})*/
+	}
 
 	port := os.Getenv("PORT")
 	if port == "" {

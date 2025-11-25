@@ -102,8 +102,15 @@ func addImageFit(pdf *fpdf.Fpdf, path string) {
 }
 
 func pdfwrite(pdf *fpdf.Fpdf, message string) {
-	pdf.Cell(float64(len(message))*2.1, 10, message)
-	pdf.Ln(10)
+	const desiredWidth = 180.0 // Adjust this value based on your PDF layout (e.g., page width minus margins)
+	const lineHeight = 10.0    // Height of each line of text
+
+	// Use MultiCell for automatic text wrapping.
+	// Parameters: width, line_height, text, border_flags (0 for no border), align ("L" for left), fill (false for no fill)
+	pdf.MultiCell(desiredWidth, lineHeight, message, "0", "L", false)
+
+	// MultiCell automatically advances the Y position to the line after the last text line.
+	// pdf.Ln() is not usually needed directly after MultiCell unless you want extra spacing.
 }
 
 func PdfRepport(pdf *fpdf.Fpdf, visit models.Visit) {
