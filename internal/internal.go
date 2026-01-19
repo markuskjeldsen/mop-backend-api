@@ -131,27 +131,65 @@ func PdfReport(pdf *fpdf.Fpdf, v models.Visit) {
 	}
 
 	for i, deb := range v.Debitors {
-		write(30, float64(53+i*5), deb.Name)
+		write(31, float64(51+i*5), deb.Name)
 	}
 
 	for i, deb := range v.Debitors {
-		write(100, float64(50+i*5), deb.SSN)
+		write(120, float64(51+i*5), deb.SSN)
 	}
 
 	if v.VisitResponse.DebitorIsHome {
-		write(20, 80, "X")
+		write(20, 95, "X")
 	} else {
-		write(20, 90, "X")
+		write(20, 103, "X")
 	}
 
 	switch v.VisitResponse.CivilStatus {
-	case models.Cohabiting:
-		write(20, 200, "X")
 	case models.Married:
-		write(20, 230, "X")
+		write(20, 120, "X")
+	case models.Cohabiting:
+		write(20, 127, "X")
 	case models.Single:
-		write(20, 250, "X")
+		write(20, 136, "X")
+	}
 
+	if v.VisitResponse.ChildrenUnder18 < 1 {
+		write(60, 120, fmt.Sprint(v.VisitResponse.ChildrenUnder18))
+	}
+
+	// TODO: arbejde?
+
+	// TODO: udbetalt månnedligt
+	// TODO: månedligt rådigheds beløb
+
+	// TODO: Gæld i alt
+	// TODO: afvikles der på gælden?
+
+	switch v.VisitResponse.PropertyType {
+	case models.PropertyFreestandingHouse:
+		write(20, 136, "X")
+	case models.PropertyTerracedHouse:
+		write(20, 136, "X")
+	case models.PropertySummerHouse:
+		write(20, 136, "X")
+	case models.PropertyGardenColony:
+		write(20, 136, "X")
+	case models.PropertyTownhouse: // byhus
+		write(2, 136, "X")
+	case models.PropertyApartment:
+		write(2, 136, "X")
+	}
+
+	switch v.VisitResponse.MaintenanceStatus {
+	case models.WellMaintained:
+		write(2, 136, "X")
+	case models.Deteriorated:
+		write(2, 136, "X")
+	}
+
+	switch v.VisitResponse.OwnershipStatus {
+	case "Ejer":
+		write(20, 136, "X") // need to implement a models.propertyOwns or something
 	}
 
 	pdf.AddPage()
