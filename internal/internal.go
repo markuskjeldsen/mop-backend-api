@@ -146,16 +146,19 @@ func PdfReport(pdf *fpdf.Fpdf, v models.Visit) {
 
 	switch v.VisitResponse.CivilStatus {
 	case models.Married:
-		write(20, 120, "X")
+		write(20, 119.8, "X")
 	case models.Cohabiting:
-		write(20, 127, "X")
+		write(20, 125.7, "X")
 	case models.Single:
-		write(20, 136, "X")
+		write(20, 137.5, "X")
 	}
-
-	if v.VisitResponse.ChildrenUnder18 < 1 {
-		write(60, 120, fmt.Sprint(v.VisitResponse.ChildrenUnder18))
-	}
+	// for testing
+	/*
+		write(20, 119.8, "M")
+		write(20, 125.7, "C")
+		write(20, 137.5, "S")
+	*/
+	write(85, 119.8, fmt.Sprint(v.VisitResponse.ChildrenUnder18))
 
 	// TODO: arbejde?
 
@@ -167,31 +170,56 @@ func PdfReport(pdf *fpdf.Fpdf, v models.Visit) {
 
 	switch v.VisitResponse.PropertyType {
 	case models.PropertyFreestandingHouse:
-		write(20, 136, "X")
-	case models.PropertyTerracedHouse:
-		write(20, 136, "X")
-	case models.PropertySummerHouse:
-		write(20, 136, "X")
-	case models.PropertyGardenColony:
-		write(20, 136, "X")
+		write(20, 184.5, "X")
 	case models.PropertyTownhouse: // byhus
-		write(2, 136, "X")
+		write(51, 184.5, "X")
+	case models.PropertyTerracedHouse: //rækkehus
+		write(76, 184.5, "X")
+	case models.PropertySummerHouse:
+		write(20, 190, "X")
+	case models.PropertyGardenColony:
+		write(51, 190, "X")
 	case models.PropertyApartment:
-		write(2, 136, "X")
+		write(76, 190, "X")
 	}
+
+	/*
+		write(20, 184.5, "FS") models.PropertyFreestandingHouse
+		write(51, 184.5, "BY") models.PropertyTownhouse
+		write(76, 184.5, "TH") models.PropertyTerracedHouse
+
+		write(20, 190, "SH") models.PropertySummerHouse
+		write(51, 190, "GC") models.PropertyGardenColony
+		write(76, 190, "L") models.PropertyApartment
+	*/
 
 	switch v.VisitResponse.MaintenanceStatus {
 	case models.WellMaintained:
-		write(2, 136, "X")
+		write(109, 184.5, "X")
 	case models.Deteriorated:
-		write(2, 136, "X")
+		write(109, 190, "X")
 	}
+
+	/*
+		write(109, 184.5, "M") models.WellMaintained
+		write(109, 190, "D") models.Deteriorated
+	*/
 
 	switch v.VisitResponse.OwnershipStatus {
 	case "Ejer":
 		write(20, 136, "X") // need to implement a models.propertyOwns or something
+	case "LejerBolig":
+		write(43, 204, "X")
 	}
+	/*
+		write(20, 204, "O") // owner
+		write(43, 204, "R") // renter
+		write(68, 204, "P") // Part andelsbolig
 
+		write(20, 210, "A") // alone
+		write(52, 210, "W") // with Others
+		write(93, 210, "S") // spouse
+	*/
 	pdf.AddPage()
 	pdfwrite(pdf, "kommentarer: "+v.VisitResponse.Comments)
 
