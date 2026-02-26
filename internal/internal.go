@@ -119,7 +119,7 @@ func PdfReport(pdf *fpdf.Fpdf, v models.Visit) {
 	pdf.AddUTF8Font("Arial", "", "./static/Arial_Unicode_MS_Regular.ttf")
 	pdf.SetFont("Arial", "", 11)
 
-	tpl := gofpdi.ImportPage(pdf, "./static/blanco.pdf", 1, "/MediaBox")
+	tpl := gofpdi.ImportPage(pdf, "./static/Besøgsbrev bilbesøg.pdf", 1, "/MediaBox")
 	pdf.AddPage()
 
 	gofpdi.UseImportedTemplate(pdf, tpl, 0, 0, 210, 0)
@@ -130,96 +130,143 @@ func PdfReport(pdf *fpdf.Fpdf, v models.Visit) {
 		pdf.CellFormat(0, 5, txt, "", 0, "", false, 0, "")
 	}
 
+	write(175, 24, fmt.Sprint(v.Sagsnr))
+
 	for i, deb := range v.Debitors {
-		write(31, float64(51+i*5), deb.Name)
+		write(31, float64(25+i*5), deb.Name)
 	}
 
 	for i, deb := range v.Debitors {
-		write(120, float64(51+i*5), deb.SSN)
+		write(130, float64(25+i*5), deb.SSN)
 	}
+
+	write(31, 35, v.Address)
+	write(168, 36, v.Debitors[0].Phone)
+	write(168, 41, v.Debitors[0].Email)
+
+	write(47, 58, v.VisitDate.Format("2006-01-02")) // YYYY-MM-DD
+	write(105, 50, v.User.Name)
+	write(108, 58, "MARKUS")
+
+	// ACTUAL DATA
+
+	/*
+		DebitorIsHome   bool   `json:"debitor_is_home"`
+		PaymentReceived bool   `json:"payment_received"`
+
+		AssetAtAddress  bool   `json:"asset_at_address"`
+		AssetAtWorkshop bool   `json:"asset_at_workshop"`
+		AssetLocation   string `json:"asset_location"`
+
+		AssetComments string `json:"asset_comments"`
+		AssetCleaned    bool   `json:"asset_cleaned"`
+
+		AssetDelivered bool `json:"asset_delivered"`
+		AssetDamaged   bool `json:"asset_damaged"` // if then discribe
+		KeysGiven      bool `json:"keys_given"`
+		KeysReceived   bool `json:"keys_received"`
+
+		OdometerKm uint `json:"odometer_km"`
+	*/
 
 	if v.VisitResponse.DebitorIsHome {
-		write(20, 95, "X")
+		write(20, 82, "X")
 	} else {
-		write(20, 103, "X")
+		write(30, 82, "X")
 	}
 
-	switch v.VisitResponse.CivilStatus {
-	case models.Married:
-		write(20, 119.8, "X")
-	case models.Cohabiting:
-		write(20, 125.7, "X")
-	case models.Single:
-		write(20, 137.5, "X")
-	}
-	// for testing
+	write(25, 87, v.VisitResponse.ActTime)
+
 	/*
-		write(20, 119.8, "M")
-		write(20, 125.7, "C")
-		write(20, 137.5, "S")
+		switch v.VisitResponse.CivilStatus {
+		case models.Married:
+			write(20, 119.8, "X")
+		case models.Cohabiting:
+			write(20, 125.7, "X")
+		case models.Single:
+			write(20, 137.5, "X")
+		}
+		// for testing
 	*/
-	write(85, 119.8, fmt.Sprint(v.VisitResponse.ChildrenUnder18))
+	write(20, 135, "M")
+	write(20, 141, "C")
+	write(20, 147, "S")
+
+	write(80, 135, fmt.Sprint(v.VisitResponse.ChildrenUnder18))
 
 	// TODO: arbejde?
+	//v.VisitResponse.HasWork
+	//v.VisitResponse.Position
 
 	// TODO: udbetalt månnedligt
 	// TODO: månedligt rådigheds beløb
 
+	//v.VisitResponse.IncomePayment
+	//v.VisitResponse.MonthlyDisposableAmount
+
 	// TODO: Gæld i alt
 	// TODO: afvikles der på gælden?
+	//v.VisitResponse.DebtAmount
+	//v.VisitResponse.Creditor
 
-	switch v.VisitResponse.PropertyType {
-	case models.PropertyFreestandingHouse:
-		write(20, 184.5, "X")
-	case models.PropertyTownhouse: // byhus
-		write(51, 184.5, "X")
-	case models.PropertyTerracedHouse: //rækkehus
-		write(76, 184.5, "X")
-	case models.PropertySummerHouse:
-		write(20, 190, "X")
-	case models.PropertyGardenColony:
-		write(51, 190, "X")
-	case models.PropertyApartment:
-		write(76, 190, "X")
-	}
+	//v.VisitResponse.DebtAmount2
+	//v.VisitResponse.Creditor2
+
+	//v.VisitResponse.DebtAmount3
+	//v.VisitResponse.Creditor3
 
 	/*
-		write(20, 184.5, "FS") models.PropertyFreestandingHouse
-		write(51, 184.5, "BY") models.PropertyTownhouse
-		write(76, 184.5, "TH") models.PropertyTerracedHouse
-
-		write(20, 190, "SH") models.PropertySummerHouse
-		write(51, 190, "GC") models.PropertyGardenColony
-		write(76, 190, "L") models.PropertyApartment
+		switch v.VisitResponse.PropertyType {
+		case models.PropertyFreestandingHouse:
+			write(20, 184.5, "X")
+		case models.PropertyTownhouse: // byhus
+			write(51, 184.5, "X")
+		case models.PropertyTerracedHouse: //rækkehus
+			write(76, 184.5, "X")
+		case models.PropertySummerHouse:
+			write(20, 190, "X")
+		case models.PropertyGardenColony:
+			write(51, 190, "X")
+		case models.PropertyApartment:
+			write(76, 190, "X")
+		}
 	*/
 
-	switch v.VisitResponse.MaintenanceStatus {
-	case models.WellMaintained:
-		write(109, 184.5, "X")
-	case models.Deteriorated:
-		write(109, 190, "X")
-	}
+	write(20, 184.7, "FS") // models.PropertyFreestandingHouse
+	write(48, 184.7, "BY") // models.PropertyTownhouse
+	write(72, 184.7, "TH") // models.PropertyTerracedHouse
+
+	write(20, 191.8, "SH") // models.PropertySummerHouse
+	write(48, 191.8, "GC") // models.PropertyGardenColony
+	write(72, 191.8, "L")  // models.PropertyApartment
+	/*
+		switch v.VisitResponse.MaintenanceStatus {
+		case models.WellMaintained:
+			write(109, 184.5, "X")
+		case models.Deteriorated:
+			write(109, 190, "X")
+		}
+	*/
+
+	write(101, 184.7, "M") // models.WellMaintained
+	write(95, 191.8, "D")  // models.Deteriorated
 
 	/*
-		write(109, 184.5, "M") models.WellMaintained
-		write(109, 190, "D") models.Deteriorated
+		switch v.VisitResponse.OwnershipStatus {
+		case "Ejer":
+			write(20, 136, "X") // need to implement a models.propertyOwns or something
+		case "LejerBolig":
+			write(43, 204, "X")
+		}
 	*/
+	write(20, 206, "O") // owner
+	write(42, 206, "R") // renter
+	write(66, 206, "P") // Part andelsbolig
 
-	switch v.VisitResponse.OwnershipStatus {
-	case "Ejer":
-		write(20, 136, "X") // need to implement a models.propertyOwns or something
-	case "LejerBolig":
-		write(43, 204, "X")
-	}
-	/*
-		write(20, 204, "O") // owner
-		write(43, 204, "R") // renter
-		write(68, 204, "P") // Part andelsbolig
+	write(20, 212, "A") // alone
+	write(49, 212, "W") // with Others
+	write(87, 212, "S") // spouse
 
-		write(20, 210, "A") // alone
-		write(52, 210, "W") // with Others
-		write(93, 210, "S") // spouse
-	*/
 	pdf.AddPage()
 	pdfwrite(pdf, "kommentarer: "+v.VisitResponse.Comments)
 
