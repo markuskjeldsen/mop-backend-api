@@ -51,7 +51,7 @@ func start_server() {
 
 	apiv1 := r.Group("/api/v1") // Grouping routes under /api/v1
 	{
-		apiv1.GET("/health", api.Hello) // Adding a route to the group
+		apiv1.GET("/health", api.Hello) // just returns "hello from the api"  in JSON
 		apiv1.GET("/verifytoken", middleware.RequireAuthUser, api.Verifytoken)
 
 		apiv1.GET("/users", middleware.RequireAuthAdmin, api.GetUsers)          // Adding a route to the group

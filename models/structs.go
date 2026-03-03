@@ -165,12 +165,13 @@ type VisitResponse struct {
 	Duration    time.Duration `json:"duration"`
 
 	// response data
-	DebitorIsHome   bool   `json:"debitor_is_home"`
-	PaymentReceived bool   `json:"payment_received"`
-	AssetAtAddress  bool   `json:"asset_at_address"`
-	AssetAtWorkshop bool   `json:"asset_at_workshop"`
-	AssetCleaned    bool   `json:"asset_cleaned"`
-	AssetLocation   string `json:"asset_location"`
+	DebitorIsHome         bool    `json:"debitor_is_home"`
+	PaymentReceived       bool    `json:"payment_received"`
+	PaymentReceivedAmount float32 `json:"payment_received_amount"`
+	AssetAtAddress        bool    `json:"asset_at_address"`
+	AssetAtWorkshop       bool    `json:"asset_at_workshop"`
+	AssetCleaned          bool    `json:"asset_cleaned"`
+	AssetLocation         string  `json:"asset_location"`
 
 	AssetComments string `json:"asset_comments"`
 
@@ -198,7 +199,7 @@ type VisitResponse struct {
 
 	PensionPayment float32 `json:"pension_payment"`
 
-	IncomePayment float32 `json:"income_payment"`
+	IncomePayment float32 `json:"income_payment"` // this is money recieved that is not worked for
 
 	MonthlyDisposableAmount float32 `json:"monthly_disposable_amount"`
 

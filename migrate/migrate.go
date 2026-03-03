@@ -87,6 +87,10 @@ func migrateTables() {
 
 func resetPassword(id uint) {
 	fmt.Println("id:", id)
+	if id == 1 {
+		fmt.Println("This is the ID of the root, and should not be changed. Try another user")
+		return
+	}
 	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte("pass"), 14)
 	var user models.User
 	user.ID = uint(id)

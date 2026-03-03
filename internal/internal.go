@@ -20,6 +20,8 @@ import (
 	"github.com/markuskjeldsen/mop-backend-api/models"
 	fpdf "github.com/phpdave11/gofpdf"
 	"github.com/phpdave11/gofpdf/contrib/gofpdi"
+	"golang.org/x/text/language"
+	"golang.org/x/text/message"
 )
 
 // Example function to update status and log the change
@@ -114,6 +116,11 @@ func pdfwrite(pdf *fpdf.Fpdf, message string) {
 	// pdf.Ln() is not usually needed directly after MultiCell unless you want extra spacing.
 }
 
+func floatToDKKmoney(number float32) string {
+	p := message.NewPrinter(language.Danish)
+	return p.Sprintf("%.2f kr", number)
+}
+
 func PdfReport(pdf *fpdf.Fpdf, v models.Visit) {
 	pdf.SetAutoPageBreak(false, 15)
 	pdf.AddUTF8Font("Arial", "", "./static/Arial_Unicode_MS_Regular.ttf")
@@ -146,10 +153,9 @@ func PdfReport(pdf *fpdf.Fpdf, v models.Visit) {
 
 	write(47, 58, v.VisitDate.Format("2006-01-02")) // YYYY-MM-DD
 	write(105, 50, v.User.Name)
-	write(108, 58, "MARKUS")
+	write(108, 56, "MARKUS")
 
 	// ACTUAL DATA
-
 	/*
 		DebitorIsHome   bool   `json:"debitor_is_home"`
 		PaymentReceived bool   `json:"payment_received"`
@@ -177,43 +183,93 @@ func PdfReport(pdf *fpdf.Fpdf, v models.Visit) {
 
 	write(25, 87, v.VisitResponse.ActTime)
 
-	/*
-		switch v.VisitResponse.CivilStatus {
-		case models.Married:
-			write(20, 119.8, "X")
-		case models.Cohabiting:
-			write(20, 125.7, "X")
-		case models.Single:
-			write(20, 137.5, "X")
-		}
-		// for testing
-	*/
-	write(20, 135, "M")
-	write(20, 141, "C")
-	write(20, 147, "S")
+	if true || v.VisitResponse.PaymentReceived {
+		//  PaymentReceived bool   `json:"payment_received"`
+		//	PaymentReceivedAmount float32 `json:"payment_received_amount"`
 
+		write(48, 82, "X")
+		write(59, 82, "N")
+		write(54, 86, floatToDKKmoney(v.VisitResponse.PaymentReceivedAmount))
+
+	}
+
+	if true || v.VisitResponse.AssetAtAddress {
+		write(82, 82, "Y")
+		write(92.5, 82, "N")
+	}
+
+	if true || v.VisitResponse.AssetDelivered {
+		write(112, 82, "Y")
+		write(122, 82, "N")
+	}
+
+	if true || v.VisitResponse.KeysGiven {
+		write(141, 82, "Y")
+		write(152, 82, "N")
+	}
+
+	if true || v.VisitResponse.AssetDamaged {
+		write(20, 102, "X")
+		write(30, 102, "X")
+	}
+
+	if true || v.VisitResponse.SFSigned {
+		write(148, 102.2, "X")
+		write(159, 102.2, "X")
+	}
+
+	if true || v.VisitResponse.SESigned {
+		write(145, 122.5, "X")
+		write(156, 122.5, "X")
+	}
+
+	switch v.VisitResponse.CivilStatus {
+	case models.Married:
+		write(20, 135, "X")
+	case models.Cohabiting:
+		write(20, 141, "X")
+	case models.Single:
+		write(20, 147, "X")
+	}
+	// for testing
+	/*
+		write(20, 135, "M")
+		write(20, 141, "C")
+		write(20, 147, "S")
+	*/
 	write(80, 135, fmt.Sprint(v.VisitResponse.ChildrenUnder18))
 
 	// TODO: arbejde?
-	//v.VisitResponse.HasWork
-	//v.VisitResponse.Position
 
-	// TODO: udbetalt månnedligt
-	// TODO: månedligt rådigheds beløb
+	if v.VisitResponse.HasWork {
+		write(91, 135, "X")
+		write(95, 142, v.VisitResponse.Position)
+		write(105, 147, floatToDKKmoney(v.VisitResponse.Salary)) // udbetalt månnedligt
+	} else {
+		write(135, 135, "X")
+	}
 
-	//v.VisitResponse.IncomePayment
-	//v.VisitResponse.MonthlyDisposableAmount
+	if true || v.VisitResponse.IncomePayment > 10 {
+		write(150, 147, floatToDKKmoney(v.VisitResponse.IncomePayment+1000)) // udbetalt månedligt fra offentlige ydelser
+	}
 
-	// TODO: Gæld i alt
-	// TODO: afvikles der på gælden?
-	//v.VisitResponse.DebtAmount
-	//v.VisitResponse.Creditor
+	if true || v.VisitResponse.HasWork || (v.VisitResponse.IncomePayment > 10) {
+		write(70, 153, floatToDKKmoney(v.VisitResponse.MonthlyDisposableAmount)) // månedligt rådigheds beløb
+	}
 
-	//v.VisitResponse.DebtAmount2
-	//v.VisitResponse.Creditor2
-
-	//v.VisitResponse.DebtAmount3
-	//v.VisitResponse.Creditor3
+	// er der anden gæld? og afvikles der i så fald på den?
+	if v.VisitResponse.DebtAmount > 0 {
+		write(32, 160, floatToDKKmoney(v.VisitResponse.DebtAmount))
+		write(95, 161, v.VisitResponse.Creditor)
+	}
+	if v.VisitResponse.DebtAmount2 > 0 {
+		write(32, 167, floatToDKKmoney(v.VisitResponse.DebtAmount2))
+		write(95, 167, v.VisitResponse.Creditor2)
+	}
+	if v.VisitResponse.DebtAmount3 > 0 {
+		write(32, 173, floatToDKKmoney(v.VisitResponse.DebtAmount3))
+		write(95, 173, v.VisitResponse.Creditor3)
+	}
 
 	/*
 		switch v.VisitResponse.PropertyType {
@@ -249,7 +305,7 @@ func PdfReport(pdf *fpdf.Fpdf, v models.Visit) {
 	*/
 
 	write(101, 184.7, "M") // models.WellMaintained
-	write(95, 191.8, "D")  // models.Deteriorated
+	write(102, 191.8, "D") // models.Deteriorated
 
 	/*
 		switch v.VisitResponse.OwnershipStatus {

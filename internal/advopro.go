@@ -61,18 +61,21 @@ func ExecuteQuery(server, database, query string, params ...interface{}) ([]map[
 
 	db, err := sql.Open("sqlserver", conn)
 	if err != nil {
+		fmt.Println("server could not be opened")
 		return nil, err
 	}
 	defer db.Close()
 
 	rows, err := db.Query(query, params...)
 	if err != nil {
+		fmt.Println("Query could not be executed")
 		return nil, err
 	}
 	defer rows.Close()
 
 	cols, err := rows.Columns()
 	if err != nil {
+		fmt.Println("Somthing went wrong in the data parsing")
 		return nil, err
 	}
 
@@ -84,6 +87,7 @@ func ExecuteQuery(server, database, query string, params ...interface{}) ([]map[
 			ptrs[i] = &values[i]
 		}
 		if err := rows.Scan(ptrs...); err != nil {
+			fmt.Println("Somthing went wrong in the data parsing")
 			return nil, err
 		}
 
