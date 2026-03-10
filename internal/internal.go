@@ -19,7 +19,6 @@ import (
 	"github.com/markuskjeldsen/mop-backend-api/initializers"
 	"github.com/markuskjeldsen/mop-backend-api/models"
 	fpdf "github.com/phpdave11/gofpdf"
-	"github.com/phpdave11/gofpdf/contrib/gofpdi"
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
 )
@@ -120,22 +119,265 @@ func floatToDKKmoney(number float32) string {
 	p := message.NewPrinter(language.Danish)
 	return p.Sprintf("%.2f kr", number)
 }
+func write(pdf *fpdf.Fpdf, x, y float64, txt string) {
+	pdf.SetXY(x, y)
+	pdf.CellFormat(0, 5, txt, "", 0, "", false, 0, "")
+}
+func field(pdf *fpdf.Fpdf, label string, value string) {
+	pdf.CellFormat(40, 6, label, "", 0, "", false, 0, "")
+	pdf.CellFormat(80, 6, value, "", 1, "", false, 0, "")
+}
+func checkbox(pdf *fpdf.Fpdf, checked bool, label string) {
+	boxSize := 4.0
+
+	x, y := pdf.GetXY()
+
+	// label
+	pdf.CellFormat(15, 6, label, "", 0, "", false, 0, "")
+
+	// draw box
+	pdf.Rect(x+30, y+1, boxSize, boxSize, "D")
+
+	// mark if checked
+	if checked {
+		pdf.SetXY(x+30, y+0.5)
+		pdf.CellFormat(boxSize, 6, "X", "", 0, "C", false, 0, "")
+	}
+
+}
+func boolToString(value bool) string {
+	if value {
+		return "Ja"
+	} else {
+		return "nej"
+	}
+}
+
+func questionRow(pdf *fpdf.Fpdf, label string, answer string, details string) {
+
+	// should sum to 90
+	//
+	labelW := 40.0
+	answerW := 20.0
+	detailW := 30.0
+	x, _ := pdf.GetXY()
+
+	pdf.SetFontStyle("B")
+	pdf.CellFormat(labelW, 6, label, "", 0, "", false, 0, "")
+	pdf.SetFontStyle("")
+	pdf.CellFormat(answerW, 6, answer, "", 0, "", false, 0, "")
+	pdf.CellFormat(detailW, 6, details, "", 1, "", false, 0, "")
+	_, y := pdf.GetXY()
+	pdf.SetXY(x, y)
+}
+
+var pdfnormalFontSize float64 = 10
+var pdflargerFontSize float64 = 30
+
+func pdfHeader(pdf *fpdf.Fpdf, v models.Visit) {
+	// this will be the overview box or header
+
+	//box dimensions
+	box_width := float64(190)
+	box_heigt := float64(50)
+	box_cornerX := float64(10)
+	box_cornerY := float64(20)
+
+	// LEASING
+	// |---------------------------------------------------------------------------|
+	// | Sagsnr    xxx-xxx         Adresse:  hyldekærparken    besøgsid:xxxxx      |
+	// | dato for besøg 2026-03-04  kl: 21:30                                      |
+	// | Debitorer:                                                                |
+	// |  peter hansen, tlf: xxxx xxxx   mail: peter@hansen.com  debitorId:XXXXX   |
+	// |  berit hansen, tlf: xxxx xxxx   mail: berit@hansen.com  debitorId:XXXXX   |
+	// | konsulent: Markus kjeldsen,   tlfnr: xxxx xxxx                            |
+	// |                                                                           |
+	// |---------------------------------------------------------------------------|
+	// the page is 210 wide and the box is 190 wide
+	//0_ 10 ---------------------------------------------------- 200_210
+
+	pdf.SetXY(10, 10)
+	pdf.SetFont("Arial", "", pdflargerFontSize)
+
+	pdf.CellFormat(0, 10, strings.ToUpper(v.Type.Text), "", 0, "", false, 0, "")
+	pdf.SetFont("Arial", "", pdfnormalFontSize)
+
+	// first a large box
+	pdf.Rect(box_cornerX, box_cornerY, box_width, box_heigt, "D")
+	pdf.SetXY(10, 20)
+
+	// case information
+	pdf.CellFormat(30, 6, "Sagsnr", "", 0, "", false, 0, "")
+	pdf.CellFormat(30, 6, fmt.Sprint(v.Sagsnr), "", 0, "", false, 0, "")
+	pdf.CellFormat(30, 6, "Adresse", "", 0, "", false, 0, "")
+	pdf.CellFormat(30, 6, v.Address, "", 0, "", false, 0, "")
+	pdf.CellFormat(30, 6, "BesøgsId:", "", 0, "R", false, 0, "")
+	pdf.CellFormat(40, 6, fmt.Sprint(v.ID), "", 1, "R", false, 0, "")
+
+	// visit information
+	pdf.CellFormat(30, 6, "Dato", "", 0, "", false, 0, "")
+	pdf.CellFormat(30, 6, v.VisitDate.Format("2006-01-02"), "", 0, "", false, 0, "")
+	pdf.CellFormat(30, 6, "Kl:", "", 0, "", false, 0, "")
+	pdf.CellFormat(30, 6, v.VisitResponse.ActTime, "", 1, "", false, 0, "")
+
+	//debitor information
+	pdf.CellFormat(40, 6, "Debitorer:", "", 1, "", false, 0, "")
+	for _, deb := range v.Debitors {
+		phone := strings.TrimSpace(deb.Phone)
+		if phone == "" {
+			phone = deb.PhoneWork
+		}
+		AdvoproDebitor := fmt.Sprint(deb.AdvoproDebitorId)
+		fmt.Println(deb.AdvoproDebitorId)
+
+		pdf.CellFormat(5, 6, "", "", 0, "", false, 0, "")
+		pdf.CellFormat(10, 6, "Navn:", "", 0, "", false, 0, "")
+		pdf.CellFormat(50, 6, deb.Name, "", 0, "", false, 0, "")
+		pdf.CellFormat(4, 6, "tlf:", "", 0, "", false, 0, "")
+		pdf.CellFormat(25, 6, phone, "", 0, "", false, 0, "")
+		pdf.CellFormat(8, 6, "mail:", "", 0, "", false, 0, "")
+		pdf.CellFormat(50, 6, deb.Email, "", 0, "", false, 0, "")
+		pdf.CellFormat(15, 6, "debitorId:", "", 0, "", false, 0, "")
+		pdf.CellFormat(20, 6, AdvoproDebitor, "", 1, "R", false, 0, "")
+	}
+	//pdf.CellFormat(0.5, 6, "", "", 0, "", false, 0, "")
+	checkbox(pdf, true, "Debitor hjemme")
+	pdf.CellFormat(5, 6, "", "", 1, "", false, 0, "")
+	// time spent
+	duration := time.Duration(v.VisitResponse.Duration) * time.Millisecond
+
+	pdf.CellFormat(20, 6, "tidsforbrug", "", 0, "", false, 0, "")
+	pdf.CellFormat(40, 6, duration.String(), "", 1, "", false, 0, "")
+
+	// worker information
+	pdf.SetXY(box_cornerX, box_cornerY+box_heigt-5)
+	pdf.CellFormat(20, 6, "Konsulent:", "", 0, "", false, 0, "")
+	pdf.CellFormat(40, 6, v.User.Name, "", 0, "", false, 0, "")
+	pdf.CellFormat(20, 6, "tlfnr:", "", 0, "", false, 0, "")
+	pdf.CellFormat(20, 6, v.User.Phone, "", 0, "", false, 0, "")
+}
+
+func pdfBody(pdf *fpdf.Fpdf, v models.Visit) {
+	// -----------------------------------------
+	// |HEADER already prefilled               |
+	// -----------------------------------------
+	//
+	// CAR                             life satus
+	// ----------------------------    -------------------------
+	// | Q?       A!     details  |    | Q?       A!    details|
+	// |Destryed?  YES            |    |Civilstatus married    |
+	// |                          |    |kids u/18 home  3      |
+	// |                          |    |kids u/18 nothome 5    |
+	// |                          |    |childsupport   500kr/md|
+	// |                          |    |work?      yes   janitor|
+	// |                          |    |work income 1000kr/md  |
+	// |                          |    |off.ydelser  1000kr/md |
+	// |                          |    |totaludbetalt 2000kr/md|
+	// |                          |    |rådighedsbeløb 200kr/md|
+	// |                          |    |house?                 |
+	// |                          |    |owneship of home?      |
+	// ----------------------------    ------------------------
+	//
+
+	startY := 90.0
+
+	leftX := 10.0
+	rightX := 110.0
+
+	boxWidth := 90.0
+	boxHeight := 110.0
+
+	// left box (CAR)
+	pdf.Rect(leftX, startY, boxWidth, boxHeight, "D")
+
+	// right box (LIFE STATUS)
+	pdf.Rect(rightX, startY, boxWidth, boxHeight, "D")
+
+	pdf.SetXY(leftX, startY-6)
+	pdf.SetFont("Arial", "B", 11)
+	pdf.CellFormat(boxWidth, 6, "BIL", "", 0, "L", false, 0, "")
+
+	pdf.SetXY(rightX, startY-6)
+	pdf.CellFormat(boxWidth, 6, "LIVSSITUATION", "", 0, "L", false, 0, "")
+
+	pdf.SetFont("Arial", "", 9)
+
+	paddingX := 4.0
+	paddingY := 6.0
+	pdf.SetXY(leftX+paddingX, startY+paddingY)
+
+	y := startY + 5
+
+	pdf.SetXY(leftX, y)
+	questionRow(pdf, "Destroyed?", "YES", "")
+	questionRow(pdf, "Received keys", "YES", "")
+
+	// right side
+	pdf.SetXY(rightX+paddingX, startY+paddingY)
+
+	questionRow(pdf, "Civilstatus", "Married", "")
+	questionRow(pdf, "Kids u/18 home", fmt.Sprint(v.VisitResponse.ChildrenUnder18), "")
+	questionRow(pdf, "Kids u/18 not home", fmt.Sprint(v.VisitResponse.ChildrenOver18), "")
+	questionRow(pdf, "Child support", "", fmt.Sprint(v.VisitResponse.ChildSupport))
+	questionRow(pdf, "Work?", boolToString(v.VisitResponse.HasWork), v.VisitResponse.Position)
+	questionRow(pdf, "Work income", "", floatToDKKmoney(v.VisitResponse.Salary))
+	questionRow(pdf, "Off. ydelser", "", floatToDKKmoney(v.VisitResponse.IncomePayment))
+	questionRow(pdf, "Total udbetalt", "", floatToDKKmoney(v.VisitResponse.Salary+v.VisitResponse.IncomePayment))
+	questionRow(pdf, "Rådighedsbeløb", "", floatToDKKmoney(v.VisitResponse.MonthlyDisposableAmount))
+	questionRow(pdf, "House?", string(v.VisitResponse.PropertyType), string(v.VisitResponse.MaintenanceStatus))
+	questionRow(pdf, "Ownership", "", v.VisitResponse.OwnershipStatus)
+}
+
+func pdfGenerate(pdf *fpdf.Fpdf, v models.Visit) {
+	pdf.SetAutoPageBreak(false, 15)
+	pdf.AddUTF8Font("Arial", "", "./static/Arial_Unicode_MS_Regular.ttf")
+	pdf.SetFont("Arial", "", pdfnormalFontSize)
+
+	pdf.AddPage()
+
+	//tpl := gofpdi.ImportPage(pdf, "./static/Besøgsbrev bilbesøg.pdf", 1, "/MediaBox")
+	//gofpdi.UseImportedTemplate(pdf, tpl, 0, 0, 210, 0)
+
+	// Now position your fields on top, same as with the image approach
+	// helper functions
+
+	pdfHeader(pdf, v)
+	pdfBody(pdf, v)
+
+	pdf.AddPage()
+	pdfwrite(pdf, "kommentarer: "+v.VisitResponse.Comments)
+
+	// til slut billederne
+	for _, image := range v.VisitResponse.Images {
+		pdf.AddPage()
+		addImageFit(pdf, image.ImagePath)
+	}
+
+}
 
 func PdfReport(pdf *fpdf.Fpdf, v models.Visit) {
 	pdf.SetAutoPageBreak(false, 15)
 	pdf.AddUTF8Font("Arial", "", "./static/Arial_Unicode_MS_Regular.ttf")
 	pdf.SetFont("Arial", "", 11)
 
-	tpl := gofpdi.ImportPage(pdf, "./static/Besøgsbrev bilbesøg.pdf", 1, "/MediaBox")
 	pdf.AddPage()
 
-	gofpdi.UseImportedTemplate(pdf, tpl, 0, 0, 210, 0)
+	//tpl := gofpdi.ImportPage(pdf, "./static/Besøgsbrev bilbesøg.pdf", 1, "/MediaBox")
+	//gofpdi.UseImportedTemplate(pdf, tpl, 0, 0, 210, 0)
 
 	// Now position your fields on top, same as with the image approach
+	// helper functions
 	write := func(x, y float64, txt string) {
 		pdf.SetXY(x, y)
 		pdf.CellFormat(0, 5, txt, "", 0, "", false, 0, "")
 	}
+	Field := func(label, value string) {
+		pdf.CellFormat(40, 6, label, "", 0, "", false, 0, "")
+		pdf.CellFormat(80, 6, value, "", 1, "", false, 0, "")
+	}
+
+	Field("Sagsnr", fmt.Sprint(v.Sagsnr))
+	Field("Dato", v.VisitDate.Format("2006-01-02"))
 
 	write(175, 24, fmt.Sprint(v.Sagsnr))
 
@@ -337,7 +579,7 @@ func PdfReport(pdf *fpdf.Fpdf, v models.Visit) {
 func GeneratePDFVisit(visitID uint) []byte {
 
 	var visit models.Visit
-	initializers.DB.Preload("Type").Preload("Debitors").Preload("VisitResponse").Preload("VisitResponse.Images").First(&visit, visitID)
+	initializers.DB.Preload("Type").Preload("Debitors").Preload("VisitResponse").Preload("VisitResponse.Images").Preload("User").First(&visit, visitID)
 
 	re := regexp.MustCompile(`[<>:"/\\|?*\s]`)
 	sanitizedAddress := re.ReplaceAllString(visit.Address, "_")
@@ -348,8 +590,10 @@ func GeneratePDFVisit(visitID uint) []byte {
 	pdfBuf := fpdf.New("P", "mm", "A4", "")
 	pdfFile := fpdf.New("P", "mm", "A4", "")
 
-	PdfReport(pdfBuf, visit)
-	PdfReport(pdfFile, visit)
+	//PdfReport(pdfBuf, visit)
+	//PdfReport(pdfFile, visit)
+	pdfGenerate(pdfBuf, visit)
+	pdfGenerate(pdfFile, visit)
 
 	var buf bytes.Buffer
 	err := pdfBuf.Output(&buf)

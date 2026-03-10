@@ -20,13 +20,16 @@ func init() {
 }
 
 func main() {
-	//test()
-	start_server()
+	test()
+	//start_server()
 }
 
 func test() {
-	internal.CurrentDebtCase(114429)
-	internal.GeneratePDFVisit(6)
+	fmt.Println("starting test")
+	//internal.CurrentDebtCase(114429)
+	internal.GeneratePDFVisit(1)
+
+	fmt.Println("test over")
 }
 
 func start_server() {
