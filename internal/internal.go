@@ -212,33 +212,38 @@ func questionRow(pdf *fpdf.Fpdf, label string, answer string, details string) {
 }
 
 func civilStatusToString(status *models.CivilStatus) string {
-
-	if status != nil {
-		switch *status {
-		case models.Married:
-			return "Gift"
-		case models.Cohabiting:
-			return "Samboende"
-		case models.Single:
-			return "Enlig"
-		}
-		return "Angivet forkert"
+	// Check if it's nil OR if it's pointing to an empty string
+	if status == nil || *status == "" {
+		return "-"
 	}
-	return "-"
+
+	switch *status {
+	case models.Married:
+		return "Gift"
+	case models.Cohabiting:
+		return "Samboende"
+	case models.Single:
+		return "Enlig"
+	}
+
+	// If it has a value, but it's not one of the 3 recognized constants
+	return "Angivet forkert"
 }
 
 func optionalpropertyTypeToString(propertytype *models.PropertyType) string {
-	if propertytype != nil {
-		return string(*propertytype)
+	if propertytype == nil || *propertytype == "" {
+		return "-"
 	}
-	return "-"
+
+	return string(*propertytype)
 }
 
 func optionalMaintenanceToString(maintain_status *models.MaintenanceStatus) string {
-	if maintain_status != nil {
-		return string(*maintain_status)
+	if maintain_status == nil || *maintain_status == "" {
+		return "-"
 	}
-	return "-"
+
+	return string(*maintain_status)
 }
 
 var pdfnormalFontSize float64 = 10
@@ -277,18 +282,18 @@ func pdfHeader(pdf *fpdf.Fpdf, v models.Visit) {
 	pdf.SetXY(10, 20)
 
 	// case information
-	pdf.CellFormat(30, 6, "Sagsnr", "", 0, "", false, 0, "")
+	pdf.CellFormat(30, 6, "Sagsnr:", "", 0, "", false, 0, "")
 	pdf.CellFormat(30, 6, fmt.Sprint(v.Sagsnr), "", 0, "", false, 0, "")
-	pdf.CellFormat(30, 6, "Adresse", "", 0, "", false, 0, "")
-	pdf.CellFormat(30, 6, v.Address, "", 0, "", false, 0, "")
+	pdf.CellFormat(20, 6, "Adresse:", "", 0, "", false, 0, "")
+	pdf.CellFormat(40, 6, v.Address, "", 0, "", false, 0, "")
 	pdf.CellFormat(30, 6, "BesøgsId:", "", 0, "R", false, 0, "")
 	pdf.CellFormat(40, 6, fmt.Sprint(v.ID), "", 1, "R", false, 0, "")
 
 	// visit information
 	pdf.CellFormat(30, 6, "Dato", "", 0, "", false, 0, "")
 	pdf.CellFormat(30, 6, v.VisitDate.Format("2006-01-02"), "", 0, "", false, 0, "")
-	pdf.CellFormat(30, 6, "Kl:", "", 0, "", false, 0, "")
-	pdf.CellFormat(30, 6, v.VisitResponse.ActTime, "", 1, "", false, 0, "")
+	pdf.CellFormat(20, 6, "Kl:", "", 0, "", false, 0, "")
+	pdf.CellFormat(40, 6, v.VisitResponse.ActTime, "", 1, "", false, 0, "")
 
 	pdf.CellFormat(40, 6, "", "", 1, "", false, 0, "")
 	//debitor information
@@ -317,7 +322,7 @@ func pdfHeader(pdf *fpdf.Fpdf, v models.Visit) {
 	pdf.SetXY(box_cornerX, box_cornerY+box_heigt-5)
 	pdf.CellFormat(20, 6, "Konsulent:", "", 0, "", false, 0, "")
 	pdf.CellFormat(40, 6, v.User.Name, "", 0, "", false, 0, "")
-	pdf.CellFormat(10, 6, "tlfnr:", "", 0, "", false, 0, "")
+	pdf.CellFormat(10, 6, "tlf:", "", 0, "", false, 0, "")
 	pdf.CellFormat(40, 6, v.User.Phone, "", 0, "", false, 0, "")
 	pdf.CellFormat(20, 6, "tidsforbrug:", "", 0, "", false, 0, "")
 	pdf.CellFormat(40, 6, duration.String(), "", 1, "R", false, 0, "")
@@ -338,7 +343,7 @@ func fillLifeBox(pdf *fpdf.Fpdf, v models.Visit, LifeBoxX float64, LifeBoxY floa
 	questionRow(pdf, "Debitor hjemme", optionalBoolToStr(v.VisitResponse.DebitorIsHome), "")
 	questionRow(pdf, "Civilstatus", civilStatusToString(v.VisitResponse.CivilStatus), "")
 	questionRow(pdf, "Kids u/18 hjemme", optionalUintToStr(v.VisitResponse.ChildrenUnder18), "")
-	questionRow(pdf, "Kids u/18 ikke hjemme", optionalUintToStr(v.VisitResponse.ChildrenOver18), "")
+	questionRow(pdf, "Kids u/18 udeboende", optionalUintToStr(v.VisitResponse.ChildrenOver18), "")
 
 	// Complex logic for child support
 	childSupportDetails := ""
@@ -357,8 +362,15 @@ func fillLifeBox(pdf *fpdf.Fpdf, v models.Visit, LifeBoxX float64, LifeBoxY floa
 	}
 	questionRow(pdf, "Børnepenge", hasChildSupportStr, childSupportDetails)
 
+	salary := ""
+	if v.VisitResponse.HasWork != nil {
+		if *v.VisitResponse.HasWork {
+			salary = optionalMoneyToStr(v.VisitResponse.Salary)
+		}
+	}
+
 	questionRow(pdf, "Arbejde", optionalBoolToStr(v.VisitResponse.HasWork), v.VisitResponse.Position)
-	questionRow(pdf, "Arbejde inkosmt", "", optionalMoneyToStr(v.VisitResponse.Salary))
+	questionRow(pdf, "Arbejde inkosmt", "", salary)
 	questionRow(pdf, "Off. ydelser", "", optionalMoneyToStr(v.VisitResponse.IncomePayment))
 
 	totalStr := "-"
