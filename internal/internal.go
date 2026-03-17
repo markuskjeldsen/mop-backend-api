@@ -382,10 +382,9 @@ func fillLifeBox(pdf *fpdf.Fpdf, v models.Visit, LifeBoxX float64, LifeBoxY floa
 	questionRow(pdf, "Total udbetalt", "", totalStr)
 	questionRow(pdf, "Rådighedsbeløb", "", optionalMoneyToStr(v.VisitResponse.MonthlyDisposableAmount))
 
-	questionRow(pdf, "House?", optionalpropertyTypeToString(v.VisitResponse.PropertyType), optionalMaintenanceToString((v.VisitResponse.MaintenanceStatus)))
+	questionRow(pdf, "Hus?", optionalpropertyTypeToString(v.VisitResponse.PropertyType), optionalMaintenanceToString((v.VisitResponse.MaintenanceStatus)))
 
-	questionRow(pdf, "Ownership", "", v.VisitResponse.OwnershipStatus)
-
+	questionRow(pdf, "Ejerskab?", "", v.VisitResponse.OwnershipStatus)
 }
 
 func fillCarBox(pdf *fpdf.Fpdf, v models.Visit, CarBoxX float64, CarBoxY float64, CarWidth float64) {

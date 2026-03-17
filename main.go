@@ -20,8 +20,8 @@ func init() {
 }
 
 func main() {
-	test()
-	//start_server()
+	//test()
+	start_server()
 }
 
 func test() {

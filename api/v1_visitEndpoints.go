@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"path/filepath"
 	"strconv"
 	"time"
 
@@ -283,31 +284,64 @@ func CreateVisitResponse(c *gin.Context) {
 	c.JSON(200, visitResponse)
 }
 
-// POST /visit-response/:id/images (one image at a time)
+// POST /visit-response/:id/images
 func UploadVisitImage(c *gin.Context) {
 	visitIDdata := c.Param("id")
 	visitID, _ := strconv.ParseUint(visitIDdata, 10, 32)
 
+	// 1. Fetch the Visit to get Sagsnr and ID
+	var visit models.Visit
+	if err := initializers.DB.First(&visit, visitID).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Visit not found"})
+		return
+	}
+
+	// 2. Get the file from the request
 	file, err := c.FormFile("image")
 	if err != nil {
-		c.JSON(400, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	savedPath, err := internal.SaveFile(c, file)
-	if err != nil {
-		c.JSON(500, gin.H{"error": err.Error()})
-		return
-	}
-
+	// 3. Create the database record first (to get the image.ID)
 	image := models.VisitResponseImage{
 		VisitResponseID: uint(visitID),
-		ImagePath:       savedPath,
 		OriginalName:    file.Filename,
+		ImagePath:       "pending", // Temporary placeholder
 	}
 
-	initializers.DB.Create(&image)
-	c.JSON(200, image)
+	if err := initializers.DB.Create(&image).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not create database record"})
+		return
+	}
+
+	// 4. Construct the new filename
+	// Format: {Sagsnr}_{VisitID}_{ImageID}.extension
+	extension := filepath.Ext(file.Filename)
+	newFileName := fmt.Sprintf("%d_%d_%d%s", visit.Sagsnr, visit.ID, image.ID, extension)
+
+	// Define your upload directory (ensure this folder exists)
+	uploadDir := "uploads/visit_images"
+	finalPath := filepath.Join(uploadDir, newFileName)
+
+	// 5. Save the file to the disk
+	// Using Gin's built-in SaveUploadedFile
+	if err := c.SaveUploadedFile(file, finalPath); err != nil {
+		// If saving fails, you might want to delete the DB record or handle the error
+		err1 := initializers.DB.Delete(&image).Error
+		if err1 != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to Delete record when saving file: " + err.Error()})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save file: " + err.Error()})
+		return
+	}
+
+	// 6. Update the database record with the actual path
+	image.ImagePath = finalPath
+	initializers.DB.Save(&image)
+
+	c.JSON(http.StatusOK, image)
 }
 
 func DebtInformation(c *gin.Context) {
