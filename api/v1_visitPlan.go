@@ -12,7 +12,6 @@ import (
 	"github.com/markuskjeldsen/mop-backend-api/initializers"
 	"github.com/markuskjeldsen/mop-backend-api/internal"
 	"github.com/markuskjeldsen/mop-backend-api/models"
-	"gorm.io/gorm"
 )
 
 func visitIntervalRange(arrivalTime string) string {
@@ -48,48 +47,31 @@ func visitIntervalRange(arrivalTime string) string {
 }
 
 func PlanVisit(c *gin.Context) {
-
 	user, ok := getVerifyUser(c)
 	if !ok {
-		fmt.Println("User could not be found")
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"message": "User could not be found from the token",
-		})
+		c.JSON(http.StatusUnauthorized, gin.H{"message": "User could not be found from the token"})
+		return
 	}
 
-	// this function should accept the sent to it by the frontend.
-	// verify the visits exist
-	// then update the information
-	// then change statuskode to 2 (or sthm else)
-	// assign the visits to the given user
-
-	// Parse multipart form
 	file, err := c.FormFile("file")
 	if err != nil {
 		c.JSON(400, gin.H{"error": "No file uploaded"})
 		return
 	}
 
-	// Get userId from form data
 	userID := c.PostForm("userId")
-	if userID == "" {
-		c.JSON(400, gin.H{"error": "userId is required"})
+	dateData := c.PostForm("date")
+	if userID == "" || dateData == "" {
+		c.JSON(400, gin.H{"error": "userId and date are required"})
 		return
 	}
 
-	DateData := c.PostForm("date")
-	if DateData == "" {
-		c.JSON(400, gin.H{"error": "userId is required"})
-		return
-	}
-	parsedDate, err := time.Parse("2006-01-02", DateData)
+	parsedDate, err := time.Parse("2006-01-02", dateData)
 	if err != nil {
-		c.JSON(400, gin.H{
-			"error": "invalid date format",
-		})
+		c.JSON(400, gin.H{"error": "Invalid date format. Use YYYY-MM-DD"})
+		return
 	}
 
-	// Open the uploaded file
 	src, err := file.Open()
 	if err != nil {
 		c.JSON(500, gin.H{"error": "Failed to open file"})
@@ -97,99 +79,89 @@ func PlanVisit(c *gin.Context) {
 	}
 	defer src.Close()
 
-	// Parse Excel file (assuming you're using excelize)
 	f, err := excelize.OpenReader(src)
 	if err != nil {
 		c.JSON(400, gin.H{"error": "Invalid Excel file"})
 		return
 	}
 
-	// Read data from Excel (adjust sheet name and columns as needed)
+	// Adjust "Route_1" if the sheet name changes in the new config
 	rows := f.GetRows("Route_1")
-	if rows == nil {
-		c.JSON(400, gin.H{"error": "Failed to read Excel data"})
+	if len(rows) < 2 {
+		c.JSON(400, gin.H{"error": "Failed to read Excel data or sheet is empty"})
 		return
 	}
 
 	headers := rows[0]
-	// Process each data row
-	for _, row := range rows[1:] {
-		// Create map from headers and row data
+	userIDUint, _ := strconv.ParseUint(userID, 10, 64)
+
+	for i, row := range rows[1:] {
+		// Create map for easy access by column name
 		rowData := make(map[string]string)
 		for j, header := range headers {
 			if j < len(row) {
-				rowData[header] = row[j]
+				rowData[header] = strings.TrimSpace(row[j])
 			} else {
 				rowData[header] = ""
 			}
 		}
 
-		title := strings.Split(row[2], ",")
-		visitIDInt, err := strconv.ParseUint(strings.TrimSpace(title[0]), 10, 64)
-		if err != nil {
-			fmt.Println(err)
-		}
-		visitID := uint(visitIDInt)
-		sagsnrInt, err := strconv.ParseUint(strings.TrimSpace(title[1]), 10, 64)
-		if err != nil {
-			fmt.Println(err)
-		}
-		parsedStopnr, err := strconv.ParseUint(rowData["Stop"], 10, 64)
-		if err != nil {
-			fmt.Println(err)
+		// 1. Parse IDs (Crucial for finding the record)
+		// Based on your notes: [16] is Comment 6 / besoegsId
+		visitIDUint, _ := strconv.ParseUint(rowData["Comment 6"], 10, 64) // besoegsId
+		// Based on your notes: [2] is Title / sagsnr
+		sagsnrUint, _ := strconv.ParseUint(rowData["Title"], 10, 64) // sagsnr
+		// Based on your notes: [1] is Stop
+		stopNrUint, _ := strconv.ParseUint(rowData["Stop"], 10, 64)
+
+		// 2. Parse Advopro Status (Comment 2)
+		advoproStatusUint, _ := strconv.ParseUint(rowData["Comment 2"], 10, 64) // , statuskode
+
+		if visitIDUint == 0 {
+			fmt.Printf("Row %d: Missing Visit ID, skipping\n", i+2)
+			continue
 		}
 
-		sagsnr := uint(sagsnrInt)
+		// 3. Prepare Update Object
+		updatedVisit := models.Visit{
+			Latitude:      rowData["Lattitude"],  // Keep typo if it matches Excel header
+			Longitude:     rowData["longtitude"], // Keep typo if it matches Excel header
+			VisitTime:     rowData["Arrival Time"],
+			VisitInterval: visitIntervalRange(rowData["Arrival Time"]),
+			VisitDate:     parsedDate,
+			Stopnr:        uint(stopNrUint),
+			Address:       rowData["Address"],
+			UserID:        uint(userIDUint),
+			Sagsnr:        uint(sagsnrUint),
+			// New Advopro fields
+			AdvoproStatus:       uint(advoproStatusUint),
+			AdvoproStatusText:   rowData["Comment 3"], // , statustekst
+			AdvoproDeadlineDate: rowData["Comment 4"], // , fristDato
+			AdvoproKlient:       rowData["Comment 5"], // , Klientnavn
+		}
 
-		userIDUint, err := strconv.ParseUint(userID, 10, 64)
-		if err != nil {
-			// handle error
+		// 4. Database logic
+		query := initializers.DB.Model(&models.Visit{}).Where("id = ? AND sagsnr = ?", visitIDUint, sagsnrUint)
+
+		// If not developer, only allow updating visits that are still in 'New' status (status_id = 1)
+		if user.Rights != models.RightsDeveloper {
+			query = query.Where("status_id = 1")
 		}
-		var result *gorm.DB
-		if user.Rights == models.RightsDeveloper {
-			// Update visit in database
-			result = initializers.DB.Model(&models.Visit{}).
-				Where("id = ? AND sagsnr = ?", visitID, sagsnr).
-				Updates(models.Visit{
-					Latitude:      rowData["Latitude"],
-					Longitude:     rowData["Longitude"],
-					VisitTime:     rowData["Arrival Time"],
-					VisitInterval: visitIntervalRange(rowData["Arrival Time"]),
-					VisitDate:     parsedDate,
-					Stopnr:        uint(parsedStopnr),
-					Address:       rowData["Address"],
-					UserID:        uint(userIDUint),
-				})
-		} else {
-			// Update visit in database
-			result = initializers.DB.Model(&models.Visit{}).
-				Where("id = ? AND sagsnr = ? AND status_id = 1", visitID, sagsnr).
-				Updates(models.Visit{
-					Latitude:      rowData["Latitude"],
-					Longitude:     rowData["Longitude"],
-					VisitTime:     rowData["Arrival Time"],
-					VisitInterval: visitIntervalRange(rowData["Arrival Time"]),
-					VisitDate:     parsedDate,
-					Address:       rowData["Address"],
-					UserID:        uint(userIDUint),
-				})
-		}
+
+		result := query.Updates(updatedVisit)
 
 		if result.Error != nil {
-			fmt.Println(result.Error.Error())
-			c.JSON(500, gin.H{"error": "Database update failed"})
-			return
+			fmt.Printf("Database error row %d: %v\n", i+2, result.Error)
+			continue
 		}
 
-		if result.RowsAffected == 0 {
-			c.JSON(400, gin.H{"error": fmt.Sprintf("Visit ID %d not found", visitID)})
-			return
+		if result.RowsAffected > 0 {
+			// Update the internal status to 2 (Planned/Assigned)
+			internal.UpdateVisitStatus(uint(visitIDUint), 2, user.ID)
 		}
-
-		internal.UpdateVisitStatus(visitID, 2, user.ID)
 	}
 
-	c.JSON(200, gin.H{"message": "Visits planned successfully"})
+	c.JSON(200, gin.H{"message": "Visits processed successfully"})
 }
 
 func PlannedVisits(c *gin.Context) {

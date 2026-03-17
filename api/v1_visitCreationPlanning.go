@@ -1,18 +1,15 @@
 package api
 
 import (
-	"bufio"
-	"bytes"
 	"fmt"
 	"log"
 	"net/http"
 	"strconv"
-	"strings"
 
-	"github.com/360EntSecGroup-Skylar/excelize"
 	"github.com/gin-gonic/gin"
 	"github.com/markuskjeldsen/mop-backend-api/initializers"
 	"github.com/markuskjeldsen/mop-backend-api/internal"
+	"github.com/markuskjeldsen/mop-backend-api/internal/excel"
 	"github.com/markuskjeldsen/mop-backend-api/models"
 	"gorm.io/gorm"
 )
@@ -52,8 +49,16 @@ func VisitCreation(c *gin.Context) {
 		return
 	}
 
-	// when creating visits, remember that the address it defined at the debitor
-	//
+	var sagsIds []uint
+	for _, vd := range visitsData {
+		sagsIds = append(sagsIds, uint(vd.Sagsnr))
+	}
+
+	advoDataMap, err := internal.FetchBulkCaseData(sagsIds)
+	if err != nil {
+		log.Println("Error fetching bulk case data:", err)
+		// Decide if you want to fail or just continue with empty fields
+	}
 
 	var createdVisits []models.Visit
 	for _, visitData := range visitsData {
@@ -63,14 +68,30 @@ func VisitCreation(c *gin.Context) {
 			notes = *visitData.Noter
 		}
 
+		extData := advoDataMap[uint(visitData.Sagsnr)]
+
+		deadlinestr := ""
+		if !extData.DeadlineDate.IsZero() {
+			deadlinestr = extData.DeadlineDate.Format("02/01/2006")
+		}
+
 		visit := models.Visit{
 			UserID:  1,
 			Address: visitData.Adresse + "," + visitData.Postnr + " " + visitData.Bynavn,
 			Notes:   notes,
 			Sagsnr:  uint(visitData.Sagsnr),
 			TypeID:  visitData.VisitType.ID,
+
+			// THE ADVOPRO DATA
+			AdvoproStatus:       uint(extData.Status),
+			AdvoproStatusText:   extData.StatusText,
+			AdvoproDeadlineDate: deadlinestr, // possibly change to time.Time if needed in the future
+			AdvoproKlient:       extData.KlientNavn,
 		}
-		initializers.DB.Create(&visit)
+		result := initializers.DB.Create(&visit)
+		if result.Error != nil {
+			fmt.Println(result.Error.Error())
+		}
 		createdVisits = append(createdVisits, visit)
 
 		for _, debtor := range visitData.Debtors {
@@ -81,6 +102,7 @@ func VisitCreation(c *gin.Context) {
 			}
 
 			// create debitor in local database if not exists
+			// if exists then assign the visit
 			var existingDebitor models.Debitor
 			result := initializers.DB.Where("advopro_debitor_id = ?", debtor.DebitorId).First(&existingDebitor)
 			if result.Error != nil { //if debitor isnt there then create them
@@ -110,80 +132,38 @@ func VisitCreation(c *gin.Context) {
 	}
 
 	fmt.Printf("Created visits count: %d\n", len(createdVisits))
+
+	// re fetch the visits to ensure debitor is there
+
+	// first collect all ids
+	var createdIDs []uint
+	for _, v := range createdVisits {
+		createdIDs = append(createdIDs, v.ID)
+	}
+
+	// then get from database
+	var fullyLoadedVisits []models.Visit
+	initializers.DB.Preload("Debitors").Where("id IN ?", createdIDs).Find(&fullyLoadedVisits)
+
 	// logging
-	for _, object := range createdVisits {
+	for _, object := range fullyLoadedVisits {
 		internal.LogVisitCreate(user, object)
 	}
 	// then return an excel sheet with the visits on it
 	// Generate Excel
-	f := excelize.NewFile()
-	sheetName := "Sheet1"
-
-	// Excel Header
-	// 					ID 		Sagsnr
-	header := []string{"Title", "Title", "Address", "Notes", "Debitors", "Service Time"}
-	for i, h := range header {
-		cell := fmt.Sprintf("%c1", 'A'+i)
-		f.SetCellValue(sheetName, cell, h)
+	f, err := excel.GenerateVisitsExcel(fullyLoadedVisits)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 	}
-
-	// Excel Data
-	for row, visit := range createdVisits {
-		var debitorNames []string
-		initializers.DB.Preload("Debitors").First(&visit, visit.ID)
-
-		for _, debitor := range visit.Debitors {
-			cleanName := strings.ReplaceAll(debitor.Name, "\n", " ")
-			cleanName = strings.ReplaceAll(cleanName, "\r", " ")
-			debitorNames = append(debitorNames, cleanName)
-		}
-
-		cleanAddress := strings.ReplaceAll(visit.Address, "\n", " ")
-		cleanAddress = strings.ReplaceAll(cleanAddress, "\r", " ")
-		cleanNotes := strings.ReplaceAll(visit.Notes, "\n", " ")
-		cleanNotes = strings.ReplaceAll(cleanNotes, "\r", " ")
-
-		data := []interface{}{
-			fmt.Sprintf("%d", visit.ID),
-			visit.Sagsnr,
-			cleanAddress,
-			cleanNotes,
-			strings.Join(debitorNames, ", "),
-			"15",
-		}
-
-		for col, value := range data {
-			cell := fmt.Sprintf("%c%d", 'A'+col, row+2)
-			f.SetCellValue(sheetName, cell, value)
-		}
-	}
-
-	cellValue := f.GetCellValue(sheetName, "A1")
-	fmt.Println(cellValue)
-
-	c.Header("Content-Disposition", "attachment; filename=visits.xlsx")
-	c.Header("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-
-	// Create a buffer and save to it
-	var buf bytes.Buffer
-	writer := bufio.NewWriter(&buf)
-	if err := f.Write(writer); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate Excel file"})
-		return
-	}
-	writer.Flush()
-
-	c.Data(http.StatusOK, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", buf.Bytes())
-
+	excel.SendExcelResponse(c, f, "visits.xlsx")
 }
 
 func VisitFile(c *gin.Context) {
-	user, ok := getVerifyUser(c)
+	_, ok := getVerifyUser(c)
 	if !ok {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "User could not be found from the token"})
 		return
 	}
-	fmt.Println(user.ID)
 
 	var planData struct {
 		VisitIds []int `json:"visitIds"`
@@ -194,66 +174,12 @@ func VisitFile(c *gin.Context) {
 		return
 	}
 
-	// Generate Excel
-	f := excelize.NewFile()
-	sheetName := "Sheet1"
+	var visits []models.Visit
+	// Efficiently fetch all visits at once
+	initializers.DB.Preload("Debitors").Where("id IN ?", planData.VisitIds).Find(&visits)
 
-	// Excel Header
-	// 					ID 		Sagsnr
-	header := []string{"Title", "Title", "Address", "Notes", "Debitors", "Service Time"}
-	for i, h := range header {
-		cell := fmt.Sprintf("%c1", 'A'+i)
-		f.SetCellValue(sheetName, cell, h)
-	}
-
-	// Excel Data
-	for row, visitid := range planData.VisitIds {
-		var visit models.Visit
-		var debitorNames []string
-		initializers.DB.Preload("Debitors").First(&visit, visitid)
-
-		for _, debitor := range visit.Debitors {
-			cleanName := strings.ReplaceAll(debitor.Name, "\n", " ")
-			cleanName = strings.ReplaceAll(cleanName, "\r", " ")
-			debitorNames = append(debitorNames, cleanName)
-		}
-
-		cleanAddress := strings.ReplaceAll(visit.Address, "\n", " ")
-		cleanAddress = strings.ReplaceAll(cleanAddress, "\r", " ")
-		cleanNotes := strings.ReplaceAll(visit.Notes, "\n", " ")
-		cleanNotes = strings.ReplaceAll(cleanNotes, "\r", " ")
-
-		data := []interface{}{
-			fmt.Sprintf("%d", visit.ID),
-			visit.Sagsnr,
-			cleanAddress,
-			cleanNotes,
-			strings.Join(debitorNames, ", "),
-			"15",
-		}
-
-		for col, value := range data {
-			cell := fmt.Sprintf("%c%d", 'A'+col, row+2)
-			f.SetCellValue(sheetName, cell, value)
-		}
-	}
-
-	cellValue := f.GetCellValue(sheetName, "A1")
-	fmt.Println(cellValue)
-
-	c.Header("Content-Disposition", "attachment; filename=visits.xlsx")
-	c.Header("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-
-	// Create a buffer and save to it
-	var buf bytes.Buffer
-	writer := bufio.NewWriter(&buf)
-	if err := f.Write(writer); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate Excel file"})
-		return
-	}
-	writer.Flush()
-
-	c.Data(http.StatusOK, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", buf.Bytes())
+	f, _ := excel.GenerateVisitsExcel(visits)
+	excel.SendExcelResponse(c, f, "plan_visits.xlsx")
 }
 
 func VisitLetterSent(c *gin.Context) {

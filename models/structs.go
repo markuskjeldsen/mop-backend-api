@@ -150,6 +150,11 @@ type Visit struct {
 	VisitStatusLogs []VisitStatusLog `json:"visit_status_logs" gorm:"foreignKey:VisitID"`
 	TypeID          uint             `json:"type_id"`
 	Type            VisitType        `json:"type" gorm:"foreignKey:TypeID"`
+	// these are for data in the excel sheet
+	AdvoproStatus       uint   `json:"advopro__status"`
+	AdvoproStatusText   string `json:"advopro_status_text"`
+	AdvoproDeadlineDate string `json:"advopro_deadline_date"`
+	AdvoproKlient       string `json:"advopro_klient"`
 }
 
 type VisitResponse struct {

@@ -6,11 +6,20 @@ import (
 	"log"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	_ "github.com/denisenkom/go-mssqldb"
 	"github.com/markuskjeldsen/mop-backend-api/models"
 )
+
+type AdvoProCaseData struct {
+	Sagsnr       uint
+	Status       int
+	StatusText   string
+	DeadlineDate time.Time
+	KlientNavn   string
+}
 
 func toString(v interface{}) string {
 	if v == nil {
@@ -98,6 +107,54 @@ func ExecuteQuery(server, database, query string, params ...interface{}) ([]map[
 		results = append(results, row)
 	}
 	return results, rows.Err()
+}
+
+func FetchBulkCaseData(sagsnumre []uint) (map[uint]AdvoProCaseData, error) {
+	if len(sagsnumre) == 0 {
+		return nil, nil
+	}
+
+	// Create placeholders for the IN clause (@p1, @p2, @p3)
+	placeholders := make([]string, len(sagsnumre))
+	args := make([]interface{}, len(sagsnumre))
+	for i, id := range sagsnumre {
+		placeholders[i] = fmt.Sprintf("@p%d", i+1)
+		args[i] = id
+	}
+
+	query := fmt.Sprintf(`
+        SELECT 
+            f.Sagsnr,
+            f.Status,
+            f.Fristdato,
+            s.KlientNavn,
+            inks.Tekst
+        FROM vwInkassoForlob f
+        JOIN vwInkassoSag s ON s.Sagsnr = f.Sagsnr
+        JOIN vwInkassoStatus inkS ON inkS.Statuskode = f.Status
+        WHERE f.Sagsnr IN (%s)`, strings.Join(placeholders, ","))
+
+	results, err := ExecuteQuery(Server, AdvoPro, query, args...)
+	if err != nil {
+		fmt.Println(err.Error())
+		return nil, err
+	}
+	// TODO: WHAT IF 2 HAVE THE SAME SAGSNR?
+
+	// Map results by Sagsnr for easy lookup
+	caseMap := make(map[uint]AdvoProCaseData)
+	for _, res := range results {
+		sagsnr := uint(res["Sagsnr"].(int64))
+		caseMap[sagsnr] = AdvoProCaseData{
+			Sagsnr:       sagsnr,
+			Status:       int(res["Status"].(int64)),
+			StatusText:   res["Tekst"].(string),
+			DeadlineDate: res["Fristdato"].(time.Time),
+			KlientNavn:   res["KlientNavn"].(string),
+		}
+	}
+
+	return caseMap, nil
 }
 
 func FetchDebitorData(debitorNum int64) *models.Debitor {
