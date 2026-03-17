@@ -367,7 +367,7 @@ func DeleteVisit(c *gin.Context) {
 	dataid := c.Query("id")
 	id, _ := strconv.ParseUint(dataid, 10, 32)
 
-	_, ok := getVerifyUser(c)
+	actinguser, ok := getVerifyUser(c)
 	if !ok {
 		c.JSON(http.StatusInternalServerError, gin.H{})
 		return
@@ -382,6 +382,8 @@ func DeleteVisit(c *gin.Context) {
 		})
 		return
 	}
+
+	internal.LogVisitDelete(actinguser, visit)
 
 	c.Status(http.StatusOK)
 }
