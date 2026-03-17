@@ -13,6 +13,11 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+// ptr is a generic helper that returns a pointer to the value passed in
+func ptr[T any](v T) *T {
+	return &v
+}
+
 func usage() {
 	fmt.Fprintf(os.Stderr, `usage:
   %s automigrate
@@ -416,26 +421,26 @@ var visitResponse1 = models.VisitResponse{
 	ActLat:  "37.7749",
 	ActLong: "-122.4194",
 	// Response data
-	DebitorIsHome: true,
+	DebitorIsHome: ptr(true),
 
-	AssetAtAddress: true,
-	AssetDamaged:   false,
+	AssetAtAddress: ptr(true),
+	AssetDamaged:   ptr(false),
 
-	CivilStatus:     models.Cohabiting,
-	ChildrenUnder18: 10,
-	ChildrenOver18:  10,
-	ChildSupport:    4000,
+	CivilStatus:     ptr(models.Cohabiting),
+	ChildrenUnder18: ptr(uint(10)),
+	ChildrenOver18:  ptr(uint(10)),
+	ChildSupport:    ptr(float32(4000)),
 
-	HasWork:  true,
+	HasWork:  ptr(true),
 	Position: "CEO",
-	Salary:   50000,
+	Salary:   ptr(float32(50000)),
 
 	Creditor:   "nordania",
-	DebtAmount: 1000000,
+	DebtAmount: ptr(float32(1000000)),
 	Settlement: "forlig",
 
-	PropertyType:      models.PropertyApartment,
-	MaintenanceStatus: models.Deteriorated,
+	PropertyType:      ptr(models.PropertyApartment),
+	MaintenanceStatus: ptr(models.Deteriorated),
 
 	OwnershipStatus: "renter",
 
@@ -449,26 +454,26 @@ var visitResponse2 = models.VisitResponse{
 	ActLat:  "37.7749",
 	ActLong: "-122.4194",
 	// Response data
-	DebitorIsHome: true,
+	DebitorIsHome: ptr(true),
 
-	AssetAtAddress: true,
-	AssetDamaged:   false,
+	AssetAtAddress: ptr(true),
+	AssetDamaged:   ptr(false),
 
-	CivilStatus:     models.Married,
-	ChildrenUnder18: 10,
-	ChildrenOver18:  10,
-	ChildSupport:    4000,
+	CivilStatus:     ptr(models.Married),
+	ChildrenUnder18: ptr(uint(10)),
+	ChildrenOver18:  ptr(uint(10)),
+	ChildSupport:    ptr(float32(4000.0)),
 
-	HasWork:  true,
+	HasWork:  ptr(true),
 	Position: "CEO",
-	Salary:   50000,
+	Salary:   ptr(float32(50000)),
 
 	Creditor:   "nordania",
-	DebtAmount: 1000000,
+	DebtAmount: ptr(float32(1000000)),
 	Settlement: "forlig",
 
-	PropertyType:      models.PropertyFreestandingHouse,
-	MaintenanceStatus: models.WellMaintained,
+	PropertyType:      ptr(models.PropertyFreestandingHouse),
+	MaintenanceStatus: ptr(models.WellMaintained),
 
 	OwnershipStatus: "owner",
 
@@ -481,26 +486,26 @@ var visitResponse3 = models.VisitResponse{
 	ActLat:  "37.7749",
 	ActLong: "-122.4194",
 	// Response data
-	DebitorIsHome: true,
+	DebitorIsHome: ptr(true),
 
-	AssetAtAddress: true,
-	AssetDamaged:   false,
+	AssetAtAddress: ptr(true),
+	AssetDamaged:   ptr(false),
 
-	CivilStatus:     models.Married,
-	ChildrenUnder18: 0,
-	ChildrenOver18:  0,
-	ChildSupport:    0,
+	CivilStatus:     ptr(models.Married),
+	ChildrenUnder18: ptr(uint(0)),
+	ChildrenOver18:  ptr(uint(0)),
+	ChildSupport:    ptr(float32(0)),
 
-	HasWork:  true,
+	HasWork:  ptr(true),
 	Position: "janitor",
-	Salary:   50000,
+	Salary:   ptr(float32(50000)),
 
 	Creditor:   "nordania",
-	DebtAmount: 1000000,
+	DebtAmount: ptr(float32(1000000)),
 	Settlement: "forlig",
 
-	PropertyType:      models.PropertyApartment,
-	MaintenanceStatus: models.Deteriorated,
+	PropertyType:      ptr(models.PropertyApartment),
+	MaintenanceStatus: ptr(models.Deteriorated),
 
 	OwnershipStatus: "owner",
 
@@ -513,26 +518,26 @@ var visitResponse4 = models.VisitResponse{
 	ActLat:  "37.7749",
 	ActLong: "-122.4194",
 	// Response data
-	DebitorIsHome: false,
+	DebitorIsHome: ptr(false),
 
-	AssetAtAddress: false,
-	AssetDamaged:   false,
+	AssetAtAddress: ptr(false),
+	AssetDamaged:   ptr(false),
 
-	CivilStatus:     models.Single,
-	ChildrenUnder18: 10,
-	ChildrenOver18:  10,
-	ChildSupport:    4000,
+	CivilStatus:     ptr(models.Single),
+	ChildrenUnder18: ptr(uint(10)),
+	ChildrenOver18:  ptr(uint(10)),
+	ChildSupport:    ptr(float32(4000)),
 
-	HasWork:  true,
+	HasWork:  ptr(true),
 	Position: "CEO",
-	Salary:   50000,
+	Salary:   ptr(float32(50000)),
 
 	Creditor:   "nordania",
-	DebtAmount: 1000000,
+	DebtAmount: ptr(float32(1000000)),
 	Settlement: "forlig",
 
-	PropertyType:      models.PropertySummerHouse,
-	MaintenanceStatus: models.WellMaintained,
+	PropertyType:      ptr(models.PropertySummerHouse),
+	MaintenanceStatus: ptr(models.WellMaintained),
 
 	OwnershipStatus: "renter",
 

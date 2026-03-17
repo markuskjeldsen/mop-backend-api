@@ -165,58 +165,58 @@ type VisitResponse struct {
 	Duration    time.Duration `json:"duration"`
 
 	// response data
-	DebitorIsHome         bool    `json:"debitor_is_home"`
-	PaymentReceived       bool    `json:"payment_received"`
-	PaymentReceivedAmount float32 `json:"payment_received_amount"`
-	AssetAtAddress        bool    `json:"asset_at_address"`
-	AssetAtWorkshop       bool    `json:"asset_at_workshop"`
-	AssetCleaned          bool    `json:"asset_cleaned"`
-	AssetLocation         string  `json:"asset_location"`
+	DebitorIsHome         *bool    `json:"debitor_is_home"`
+	PaymentReceived       *bool    `json:"payment_received"`
+	PaymentReceivedAmount *float32 `json:"payment_received_amount"`
+	AssetAtAddress        *bool    `json:"asset_at_address"`
+	AssetAtWorkshop       *bool    `json:"asset_at_workshop"`
+	AssetCleaned          *bool    `json:"asset_cleaned"`
+	AssetLocation         string   `json:"asset_location"`
 
 	AssetComments string `json:"asset_comments"`
 
-	AssetDelivered bool `json:"asset_delivered"`
-	AssetDamaged   bool `json:"asset_damaged"` // if then discribe
-	KeysGiven      bool `json:"keys_given"`
-	KeysReceived   bool `json:"keys_received"`
+	AssetDelivered *bool `json:"asset_delivered"`
+	AssetDamaged   *bool `json:"asset_damaged"` // if then discribe
+	KeysGiven      *bool `json:"keys_given"`
+	KeysReceived   *bool `json:"keys_received"`
 
-	OdometerKm uint `json:"odometer_km"`
+	OdometerKm *uint `json:"odometer_km"`
 
-	SFSigned bool `json:"sf_signed"`
-	SESigned bool `json:"se_signed"`
+	SFSigned *bool `json:"sf_signed"`
+	SESigned *bool `json:"se_signed"`
 
-	CivilStatus CivilStatus `json:"civil_status"`
+	CivilStatus *CivilStatus `json:"civil_status"`
 
 	//children
-	ChildrenUnder18 uint    `json:"children_under_18"`
-	ChildrenOver18  uint    `json:"children_over_18"`
-	ChildSupport    float32 `json:"child_support"`
+	ChildrenUnder18 *uint    `json:"children_under_18"`
+	ChildrenOver18  *uint    `json:"children_over_18"`
+	ChildSupport    *float32 `json:"child_support"`
 
 	//work
-	HasWork  bool    `json:"has_work"`
-	Position string  `json:"position"`
-	Salary   float32 `json:"salary"`
+	HasWork  *bool    `json:"has_work"`
+	Position string   `json:"position"`
+	Salary   *float32 `json:"salary"`
 
-	PensionPayment float32 `json:"pension_payment"`
+	PensionPayment *float32 `json:"pension_payment"`
 
-	IncomePayment float32 `json:"income_payment"` // this is money recieved that is not worked for
+	IncomePayment *float32 `json:"income_payment"` // this is money recieved that is not worked for
 
-	MonthlyDisposableAmount float32 `json:"monthly_disposable_amount"`
+	MonthlyDisposableAmount *float32 `json:"monthly_disposable_amount"`
 
 	// debt
-	Creditor    string  `json:"creditor"`
-	DebtAmount  float32 `json:"debt_amount"`
-	Settlement  string  `json:"settlement"`
-	Creditor2   string  `json:"creditor_2"`
-	DebtAmount2 float32 `json:"debt_amount_2"`
-	Settlement2 string  `json:"settlement_2"`
-	Creditor3   string  `json:"creditor_3"`
-	DebtAmount3 float32 `json:"debt_amount_3"`
-	Settlement3 string  `json:"settlement_3"`
+	Creditor    string   `json:"creditor"`
+	DebtAmount  *float32 `json:"debt_amount"`
+	Settlement  string   `json:"settlement"`
+	Creditor2   string   `json:"creditor_2"`
+	DebtAmount2 *float32 `json:"debt_amount_2"`
+	Settlement2 string   `json:"settlement_2"`
+	Creditor3   string   `json:"creditor_3"`
+	DebtAmount3 *float32 `json:"debt_amount_3"`
+	Settlement3 string   `json:"settlement_3"`
 
 	// property
-	PropertyType      PropertyType      `json:"property_type"`
-	MaintenanceStatus MaintenanceStatus `json:"maintenance_status"`
+	PropertyType      *PropertyType      `json:"property_type"`
+	MaintenanceStatus *MaintenanceStatus `json:"maintenance_status"`
 
 	//Ownership
 	OwnershipStatus string `json:"ownership_status"` // owner, tenant, other

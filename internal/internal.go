@@ -115,6 +115,31 @@ func pdfwrite(pdf *fpdf.Fpdf, message string) {
 	// pdf.Ln() is not usually needed directly after MultiCell unless you want extra spacing.
 }
 
+// Helper to handle optional numbers (uint)
+func optionalUintToStr(val *uint) string {
+	if val == nil {
+		return "-"
+	}
+	return fmt.Sprint(*val)
+}
+
+// Helper to handle optional money (float32)
+func optionalMoneyToStr(val *float32) string {
+	if val == nil {
+		return "-"
+	}
+	p := message.NewPrinter(language.Danish)
+	return p.Sprintf("%.2f kr", *val)
+}
+
+// Optional string formatter (just checks for empty string)
+func formatStr(val string) string {
+	if val == "" {
+		return "-"
+	}
+	return val
+}
+
 func floatToDKKmoney(number float32) string {
 	p := message.NewPrinter(language.Danish)
 	return p.Sprintf("%.2f kr", number)
@@ -145,11 +170,22 @@ func checkbox(pdf *fpdf.Fpdf, checked bool, label string) {
 	}
 
 }
+
+func optionalBoolToStr(val *bool) string {
+	if val == nil {
+		return "-" // Or "Ingen data"
+	}
+	if *val {
+		return "JA"
+	}
+	return "NEJ"
+}
+
 func boolToString(value bool) string {
 	if value {
-		return "Ja"
+		return "JA"
 	} else {
-		return "nej"
+		return "NEJ"
 	}
 }
 
@@ -157,18 +193,52 @@ func questionRow(pdf *fpdf.Fpdf, label string, answer string, details string) {
 
 	// should sum to 90
 	//
-	labelW := 40.0
+	labelW := 42.0
 	answerW := 20.0
 	detailW := 30.0
 	x, _ := pdf.GetXY()
 
 	pdf.SetFontStyle("B")
+
 	pdf.CellFormat(labelW, 6, label, "", 0, "", false, 0, "")
+
 	pdf.SetFontStyle("")
+
 	pdf.CellFormat(answerW, 6, answer, "", 0, "", false, 0, "")
+
 	pdf.CellFormat(detailW, 6, details, "", 1, "", false, 0, "")
 	_, y := pdf.GetXY()
 	pdf.SetXY(x, y)
+}
+
+func civilStatusToString(status *models.CivilStatus) string {
+
+	if status != nil {
+		switch *status {
+		case models.Married:
+			return "Gift"
+		case models.Cohabiting:
+			return "Samboende"
+		case models.Single:
+			return "Enlig"
+		}
+		return "Angivet forkert"
+	}
+	return "-"
+}
+
+func optionalpropertyTypeToString(propertytype *models.PropertyType) string {
+	if propertytype != nil {
+		return string(*propertytype)
+	}
+	return "-"
+}
+
+func optionalMaintenanceToString(maintain_status *models.MaintenanceStatus) string {
+	if maintain_status != nil {
+		return string(*maintain_status)
+	}
+	return "-"
 }
 
 var pdfnormalFontSize float64 = 10
@@ -197,10 +267,10 @@ func pdfHeader(pdf *fpdf.Fpdf, v models.Visit) {
 	//0_ 10 ---------------------------------------------------- 200_210
 
 	pdf.SetXY(10, 10)
-	pdf.SetFont("Arial", "", pdflargerFontSize)
+	pdf.SetFont("Roboto", "", pdflargerFontSize)
 
 	pdf.CellFormat(0, 10, strings.ToUpper(v.Type.Text), "", 0, "", false, 0, "")
-	pdf.SetFont("Arial", "", pdfnormalFontSize)
+	pdf.SetFont("Roboto", "", pdfnormalFontSize)
 
 	// first a large box
 	pdf.Rect(box_cornerX, box_cornerY, box_width, box_heigt, "D")
@@ -220,6 +290,7 @@ func pdfHeader(pdf *fpdf.Fpdf, v models.Visit) {
 	pdf.CellFormat(30, 6, "Kl:", "", 0, "", false, 0, "")
 	pdf.CellFormat(30, 6, v.VisitResponse.ActTime, "", 1, "", false, 0, "")
 
+	pdf.CellFormat(40, 6, "", "", 1, "", false, 0, "")
 	//debitor information
 	pdf.CellFormat(40, 6, "Debitorer:", "", 1, "", false, 0, "")
 	for _, deb := range v.Debitors {
@@ -228,7 +299,6 @@ func pdfHeader(pdf *fpdf.Fpdf, v models.Visit) {
 			phone = deb.PhoneWork
 		}
 		AdvoproDebitor := fmt.Sprint(deb.AdvoproDebitorId)
-		fmt.Println(deb.AdvoproDebitorId)
 
 		pdf.CellFormat(5, 6, "", "", 0, "", false, 0, "")
 		pdf.CellFormat(10, 6, "Navn:", "", 0, "", false, 0, "")
@@ -240,21 +310,138 @@ func pdfHeader(pdf *fpdf.Fpdf, v models.Visit) {
 		pdf.CellFormat(15, 6, "debitorId:", "", 0, "", false, 0, "")
 		pdf.CellFormat(20, 6, AdvoproDebitor, "", 1, "R", false, 0, "")
 	}
-	//pdf.CellFormat(0.5, 6, "", "", 0, "", false, 0, "")
-	checkbox(pdf, true, "Debitor hjemme")
-	pdf.CellFormat(5, 6, "", "", 1, "", false, 0, "")
 	// time spent
 	duration := time.Duration(v.VisitResponse.Duration) * time.Millisecond
-
-	pdf.CellFormat(20, 6, "tidsforbrug", "", 0, "", false, 0, "")
-	pdf.CellFormat(40, 6, duration.String(), "", 1, "", false, 0, "")
 
 	// worker information
 	pdf.SetXY(box_cornerX, box_cornerY+box_heigt-5)
 	pdf.CellFormat(20, 6, "Konsulent:", "", 0, "", false, 0, "")
 	pdf.CellFormat(40, 6, v.User.Name, "", 0, "", false, 0, "")
-	pdf.CellFormat(20, 6, "tlfnr:", "", 0, "", false, 0, "")
-	pdf.CellFormat(20, 6, v.User.Phone, "", 0, "", false, 0, "")
+	pdf.CellFormat(10, 6, "tlfnr:", "", 0, "", false, 0, "")
+	pdf.CellFormat(40, 6, v.User.Phone, "", 0, "", false, 0, "")
+	pdf.CellFormat(20, 6, "tidsforbrug:", "", 0, "", false, 0, "")
+	pdf.CellFormat(40, 6, duration.String(), "", 1, "R", false, 0, "")
+
+}
+
+func fillLifeBox(pdf *fpdf.Fpdf, v models.Visit, LifeBoxX float64, LifeBoxY float64, LifeBoxWidth float64) {
+	pdf.SetXY(LifeBoxX, LifeBoxY-6)
+	pdf.SetFont("Roboto", "B", pdfnormalFontSize+3)
+	pdf.CellFormat(LifeBoxWidth, 6, "LIVSSITUATION", "", 0, "L", false, 0, "")
+	pdf.SetFont("Roboto", "", pdfnormalFontSize-1)
+
+	paddingX := 4.0
+	paddingY := 6.0
+	// right side
+	pdf.SetXY(LifeBoxX+paddingX, LifeBoxY+paddingY)
+
+	questionRow(pdf, "Debitor hjemme", optionalBoolToStr(v.VisitResponse.DebitorIsHome), "")
+	questionRow(pdf, "Civilstatus", civilStatusToString(v.VisitResponse.CivilStatus), "")
+	questionRow(pdf, "Kids u/18 hjemme", optionalUintToStr(v.VisitResponse.ChildrenUnder18), "")
+	questionRow(pdf, "Kids u/18 ikke hjemme", optionalUintToStr(v.VisitResponse.ChildrenOver18), "")
+
+	// Complex logic for child support
+	childSupportDetails := ""
+	if v.VisitResponse.ChildSupport != nil {
+		childSupportDetails = optionalMoneyToStr(v.VisitResponse.ChildSupport)
+	}
+
+	// Assuming ChildSupport existence depends on if the float is > 0 or if the pointer is just present
+	hasChildSupportStr := "-"
+	if v.VisitResponse.ChildSupport != nil {
+		if *v.VisitResponse.ChildSupport > 0 {
+			hasChildSupportStr = "JA"
+		} else {
+			hasChildSupportStr = "NEJ"
+		}
+	}
+	questionRow(pdf, "Børnepenge", hasChildSupportStr, childSupportDetails)
+
+	questionRow(pdf, "Arbejde", optionalBoolToStr(v.VisitResponse.HasWork), v.VisitResponse.Position)
+	questionRow(pdf, "Arbejde inkosmt", "", optionalMoneyToStr(v.VisitResponse.Salary))
+	questionRow(pdf, "Off. ydelser", "", optionalMoneyToStr(v.VisitResponse.IncomePayment))
+
+	totalStr := "-"
+	if v.VisitResponse.Salary != nil && v.VisitResponse.IncomePayment != nil {
+		total := *v.VisitResponse.Salary + *v.VisitResponse.IncomePayment
+		totalStr = optionalMoneyToStr(&total)
+	}
+
+	questionRow(pdf, "Total udbetalt", "", totalStr)
+	questionRow(pdf, "Rådighedsbeløb", "", optionalMoneyToStr(v.VisitResponse.MonthlyDisposableAmount))
+
+	questionRow(pdf, "House?", optionalpropertyTypeToString(v.VisitResponse.PropertyType), optionalMaintenanceToString((v.VisitResponse.MaintenanceStatus)))
+
+	questionRow(pdf, "Ownership", "", v.VisitResponse.OwnershipStatus)
+
+}
+
+func fillCarBox(pdf *fpdf.Fpdf, v models.Visit, CarBoxX float64, CarBoxY float64, CarWidth float64) {
+
+	pdf.SetXY(CarBoxX, CarBoxY-6)
+	pdf.SetFont("Roboto", "B", pdfnormalFontSize+3)
+	pdf.CellFormat(CarWidth, 6, "BIL", "", 0, "L", false, 0, "")
+	pdf.SetFont("Roboto", "", pdfnormalFontSize-1)
+
+	paddingX := 4.0
+	paddingY := 6.0
+	pdf.SetXY(CarBoxX+paddingX, CarBoxY+paddingY)
+
+	y := CarBoxY + 5
+
+	pdf.SetXY(CarBoxX, y)
+
+	questionRow(pdf, "Aktiv Skadet?", optionalBoolToStr(v.VisitResponse.AssetDamaged), "")
+	questionRow(pdf, "Received keys", optionalBoolToStr(v.VisitResponse.KeysReceived), "")
+	questionRow(pdf, "Er den på adressen?", optionalBoolToStr(v.VisitResponse.AssetAtAddress), "")
+	questionRow(pdf, "Er den ren?", optionalBoolToStr(v.VisitResponse.AssetCleaned), "")
+	questionRow(pdf, "Bilen afleveret?", optionalBoolToStr(v.VisitResponse.AssetDelivered), "")
+	questionRow(pdf, "Salgsfuldmagt underskrevet", optionalBoolToStr(v.VisitResponse.SFSigned), "")
+	questionRow(pdf, "Salgsaftale underskrevet", optionalBoolToStr(v.VisitResponse.SESigned), "SE")
+
+}
+
+func fillFinanceBox(pdf *fpdf.Fpdf, v models.Visit, FinanceBoxX float64, FinanceBoxY float64, FinanceWidth float64) {
+	pdf.SetXY(FinanceBoxX, FinanceBoxY-6)
+	pdf.SetFont("Roboto", "B", pdfnormalFontSize+3)
+	pdf.CellFormat(FinanceWidth, 6, "Anden gæld", "", 0, "L", false, 0, "")
+	pdf.SetFont("Roboto", "", pdfnormalFontSize-1)
+
+	paddingX := 4.0
+	paddingY := 6.0
+	pdf.SetXY(FinanceBoxX+paddingX, FinanceBoxY+paddingY)
+
+	y := FinanceBoxY + 5
+
+	pdf.SetXY(FinanceBoxX, y)
+
+	// ask about
+	// v.VisitResponse.Creditor
+	// v.VisitResponse.DebtAmount
+
+	questionRow(pdf, "anden gæld 1", v.VisitResponse.Creditor, optionalMoneyToStr(v.VisitResponse.DebtAmount))
+	questionRow(pdf, "anden gæld 2", v.VisitResponse.Creditor2, optionalMoneyToStr(v.VisitResponse.DebtAmount2))
+	questionRow(pdf, "anden gæld 3", v.VisitResponse.Creditor3, optionalMoneyToStr(v.VisitResponse.DebtAmount3))
+
+}
+
+func fillCommentsBox(pdf *fpdf.Fpdf, v models.Visit, CommentsBoxX float64, CommentsBoxY float64, CommentsWidth float64) {
+	pdf.SetXY(CommentsBoxX, CommentsBoxY-6)
+	pdf.SetFont("Roboto", "B", pdfnormalFontSize+3)
+	pdf.CellFormat(CommentsWidth, 6, "Kommentarer", "", 0, "L", false, 0, "")
+	pdf.SetFont("Roboto", "", pdfnormalFontSize-1)
+
+	paddingX := 4.0
+	paddingY := 6.0
+	pdf.SetXY(CommentsBoxX+paddingX, CommentsBoxY+paddingY)
+
+	y := CommentsBoxY + 5
+
+	pdf.SetXY(CommentsBoxX, y)
+
+	comment := v.VisitResponse.Comments
+	pdf.MultiCell(CommentsWidth, 5, comment, "", "TL", false)
+
 }
 
 func pdfBody(pdf *fpdf.Fpdf, v models.Visit) {
@@ -279,59 +466,48 @@ func pdfBody(pdf *fpdf.Fpdf, v models.Visit) {
 	// ----------------------------    ------------------------
 	//
 
-	startY := 90.0
+	// how low the boxes are
+	CarLifeY := 80.0
+	financeY := 130.0 + 10.0  // padding
+	CommentsY := 190.0 + 10.0 // padding
 
-	leftX := 10.0
-	rightX := 110.0
+	CarX := 10.0
+	LifeX := 110.0
+	financeX := 10.0
+	CommentsX := 10.0
 
 	boxWidth := 90.0
-	boxHeight := 110.0
+	CommentsWidth := 190.0
+
+	boxHeightCar := 50.0
+	boxHeightLife := 110.0
+	boxHeightFinance := 25.0
+	boxHeightComments := 50.0
 
 	// left box (CAR)
-	pdf.Rect(leftX, startY, boxWidth, boxHeight, "D")
+	pdf.Rect(CarX, CarLifeY, boxWidth, boxHeightCar, "D")
+	fillCarBox(pdf, v, CarX, CarLifeY, boxWidth)
 
 	// right box (LIFE STATUS)
-	pdf.Rect(rightX, startY, boxWidth, boxHeight, "D")
+	pdf.Rect(LifeX, CarLifeY, boxWidth, boxHeightLife, "D")
+	fillLifeBox(pdf, v, LifeX, CarLifeY, boxWidth)
 
-	pdf.SetXY(leftX, startY-6)
-	pdf.SetFont("Arial", "B", 11)
-	pdf.CellFormat(boxWidth, 6, "BIL", "", 0, "L", false, 0, "")
+	// gæld
+	pdf.Rect(financeX, financeY, boxWidth, boxHeightFinance, "D")
+	fillFinanceBox(pdf, v, financeX, financeY, boxWidth)
 
-	pdf.SetXY(rightX, startY-6)
-	pdf.CellFormat(boxWidth, 6, "LIVSSITUATION", "", 0, "L", false, 0, "")
+	// commentarer
+	pdf.Rect(CommentsX, CommentsY, CommentsWidth, boxHeightComments, "D")
+	fillCommentsBox(pdf, v, CommentsX, CommentsY, CommentsWidth)
 
-	pdf.SetFont("Arial", "", 9)
-
-	paddingX := 4.0
-	paddingY := 6.0
-	pdf.SetXY(leftX+paddingX, startY+paddingY)
-
-	y := startY + 5
-
-	pdf.SetXY(leftX, y)
-	questionRow(pdf, "Destroyed?", "YES", "")
-	questionRow(pdf, "Received keys", "YES", "")
-
-	// right side
-	pdf.SetXY(rightX+paddingX, startY+paddingY)
-
-	questionRow(pdf, "Civilstatus", "Married", "")
-	questionRow(pdf, "Kids u/18 home", fmt.Sprint(v.VisitResponse.ChildrenUnder18), "")
-	questionRow(pdf, "Kids u/18 not home", fmt.Sprint(v.VisitResponse.ChildrenOver18), "")
-	questionRow(pdf, "Child support", "", fmt.Sprint(v.VisitResponse.ChildSupport))
-	questionRow(pdf, "Work?", boolToString(v.VisitResponse.HasWork), v.VisitResponse.Position)
-	questionRow(pdf, "Work income", "", floatToDKKmoney(v.VisitResponse.Salary))
-	questionRow(pdf, "Off. ydelser", "", floatToDKKmoney(v.VisitResponse.IncomePayment))
-	questionRow(pdf, "Total udbetalt", "", floatToDKKmoney(v.VisitResponse.Salary+v.VisitResponse.IncomePayment))
-	questionRow(pdf, "Rådighedsbeløb", "", floatToDKKmoney(v.VisitResponse.MonthlyDisposableAmount))
-	questionRow(pdf, "House?", string(v.VisitResponse.PropertyType), string(v.VisitResponse.MaintenanceStatus))
-	questionRow(pdf, "Ownership", "", v.VisitResponse.OwnershipStatus)
 }
 
 func pdfGenerate(pdf *fpdf.Fpdf, v models.Visit) {
 	pdf.SetAutoPageBreak(false, 15)
-	pdf.AddUTF8Font("Arial", "", "./static/Arial_Unicode_MS_Regular.ttf")
-	pdf.SetFont("Arial", "", pdfnormalFontSize)
+	pdf.AddUTF8Font("Roboto", "", "./static/Roboto-light.ttf")
+	pdf.AddUTF8Font("Roboto", "B", "./static/Roboto-Bold.ttf")
+
+	pdf.SetFont("Roboto", "", pdfnormalFontSize)
 
 	pdf.AddPage()
 
@@ -340,233 +516,11 @@ func pdfGenerate(pdf *fpdf.Fpdf, v models.Visit) {
 
 	// Now position your fields on top, same as with the image approach
 	// helper functions
-
 	pdfHeader(pdf, v)
+	// header includes top info about the case, who is involved, where and when
+
 	pdfBody(pdf, v)
-
-	pdf.AddPage()
-	pdfwrite(pdf, "kommentarer: "+v.VisitResponse.Comments)
-
-	// til slut billederne
-	for _, image := range v.VisitResponse.Images {
-		pdf.AddPage()
-		addImageFit(pdf, image.ImagePath)
-	}
-
-}
-
-func PdfReport(pdf *fpdf.Fpdf, v models.Visit) {
-	pdf.SetAutoPageBreak(false, 15)
-	pdf.AddUTF8Font("Arial", "", "./static/Arial_Unicode_MS_Regular.ttf")
-	pdf.SetFont("Arial", "", 11)
-
-	pdf.AddPage()
-
-	//tpl := gofpdi.ImportPage(pdf, "./static/Besøgsbrev bilbesøg.pdf", 1, "/MediaBox")
-	//gofpdi.UseImportedTemplate(pdf, tpl, 0, 0, 210, 0)
-
-	// Now position your fields on top, same as with the image approach
-	// helper functions
-	write := func(x, y float64, txt string) {
-		pdf.SetXY(x, y)
-		pdf.CellFormat(0, 5, txt, "", 0, "", false, 0, "")
-	}
-	Field := func(label, value string) {
-		pdf.CellFormat(40, 6, label, "", 0, "", false, 0, "")
-		pdf.CellFormat(80, 6, value, "", 1, "", false, 0, "")
-	}
-
-	Field("Sagsnr", fmt.Sprint(v.Sagsnr))
-	Field("Dato", v.VisitDate.Format("2006-01-02"))
-
-	write(175, 24, fmt.Sprint(v.Sagsnr))
-
-	for i, deb := range v.Debitors {
-		write(31, float64(25+i*5), deb.Name)
-	}
-
-	for i, deb := range v.Debitors {
-		write(130, float64(25+i*5), deb.SSN)
-	}
-
-	write(31, 35, v.Address)
-	write(168, 36, v.Debitors[0].Phone)
-	write(168, 41, v.Debitors[0].Email)
-
-	write(47, 58, v.VisitDate.Format("2006-01-02")) // YYYY-MM-DD
-	write(105, 50, v.User.Name)
-	write(108, 56, "MARKUS")
-
-	// ACTUAL DATA
-	/*
-		DebitorIsHome   bool   `json:"debitor_is_home"`
-		PaymentReceived bool   `json:"payment_received"`
-
-		AssetAtAddress  bool   `json:"asset_at_address"`
-		AssetAtWorkshop bool   `json:"asset_at_workshop"`
-		AssetLocation   string `json:"asset_location"`
-
-		AssetComments string `json:"asset_comments"`
-		AssetCleaned    bool   `json:"asset_cleaned"`
-
-		AssetDelivered bool `json:"asset_delivered"`
-		AssetDamaged   bool `json:"asset_damaged"` // if then discribe
-		KeysGiven      bool `json:"keys_given"`
-		KeysReceived   bool `json:"keys_received"`
-
-		OdometerKm uint `json:"odometer_km"`
-	*/
-
-	if v.VisitResponse.DebitorIsHome {
-		write(20, 82, "X")
-	} else {
-		write(30, 82, "X")
-	}
-
-	write(25, 87, v.VisitResponse.ActTime)
-
-	if true || v.VisitResponse.PaymentReceived {
-		//  PaymentReceived bool   `json:"payment_received"`
-		//	PaymentReceivedAmount float32 `json:"payment_received_amount"`
-
-		write(48, 82, "X")
-		write(59, 82, "N")
-		write(54, 86, floatToDKKmoney(v.VisitResponse.PaymentReceivedAmount))
-
-	}
-
-	if true || v.VisitResponse.AssetAtAddress {
-		write(82, 82, "Y")
-		write(92.5, 82, "N")
-	}
-
-	if true || v.VisitResponse.AssetDelivered {
-		write(112, 82, "Y")
-		write(122, 82, "N")
-	}
-
-	if true || v.VisitResponse.KeysGiven {
-		write(141, 82, "Y")
-		write(152, 82, "N")
-	}
-
-	if true || v.VisitResponse.AssetDamaged {
-		write(20, 102, "X")
-		write(30, 102, "X")
-	}
-
-	if true || v.VisitResponse.SFSigned {
-		write(148, 102.2, "X")
-		write(159, 102.2, "X")
-	}
-
-	if true || v.VisitResponse.SESigned {
-		write(145, 122.5, "X")
-		write(156, 122.5, "X")
-	}
-
-	switch v.VisitResponse.CivilStatus {
-	case models.Married:
-		write(20, 135, "X")
-	case models.Cohabiting:
-		write(20, 141, "X")
-	case models.Single:
-		write(20, 147, "X")
-	}
-	// for testing
-	/*
-		write(20, 135, "M")
-		write(20, 141, "C")
-		write(20, 147, "S")
-	*/
-	write(80, 135, fmt.Sprint(v.VisitResponse.ChildrenUnder18))
-
-	// TODO: arbejde?
-
-	if v.VisitResponse.HasWork {
-		write(91, 135, "X")
-		write(95, 142, v.VisitResponse.Position)
-		write(105, 147, floatToDKKmoney(v.VisitResponse.Salary)) // udbetalt månnedligt
-	} else {
-		write(135, 135, "X")
-	}
-
-	if true || v.VisitResponse.IncomePayment > 10 {
-		write(150, 147, floatToDKKmoney(v.VisitResponse.IncomePayment+1000)) // udbetalt månedligt fra offentlige ydelser
-	}
-
-	if true || v.VisitResponse.HasWork || (v.VisitResponse.IncomePayment > 10) {
-		write(70, 153, floatToDKKmoney(v.VisitResponse.MonthlyDisposableAmount)) // månedligt rådigheds beløb
-	}
-
-	// er der anden gæld? og afvikles der i så fald på den?
-	if v.VisitResponse.DebtAmount > 0 {
-		write(32, 160, floatToDKKmoney(v.VisitResponse.DebtAmount))
-		write(95, 161, v.VisitResponse.Creditor)
-	}
-	if v.VisitResponse.DebtAmount2 > 0 {
-		write(32, 167, floatToDKKmoney(v.VisitResponse.DebtAmount2))
-		write(95, 167, v.VisitResponse.Creditor2)
-	}
-	if v.VisitResponse.DebtAmount3 > 0 {
-		write(32, 173, floatToDKKmoney(v.VisitResponse.DebtAmount3))
-		write(95, 173, v.VisitResponse.Creditor3)
-	}
-
-	/*
-		switch v.VisitResponse.PropertyType {
-		case models.PropertyFreestandingHouse:
-			write(20, 184.5, "X")
-		case models.PropertyTownhouse: // byhus
-			write(51, 184.5, "X")
-		case models.PropertyTerracedHouse: //rækkehus
-			write(76, 184.5, "X")
-		case models.PropertySummerHouse:
-			write(20, 190, "X")
-		case models.PropertyGardenColony:
-			write(51, 190, "X")
-		case models.PropertyApartment:
-			write(76, 190, "X")
-		}
-	*/
-
-	write(20, 184.7, "FS") // models.PropertyFreestandingHouse
-	write(48, 184.7, "BY") // models.PropertyTownhouse
-	write(72, 184.7, "TH") // models.PropertyTerracedHouse
-
-	write(20, 191.8, "SH") // models.PropertySummerHouse
-	write(48, 191.8, "GC") // models.PropertyGardenColony
-	write(72, 191.8, "L")  // models.PropertyApartment
-	/*
-		switch v.VisitResponse.MaintenanceStatus {
-		case models.WellMaintained:
-			write(109, 184.5, "X")
-		case models.Deteriorated:
-			write(109, 190, "X")
-		}
-	*/
-
-	write(101, 184.7, "M") // models.WellMaintained
-	write(102, 191.8, "D") // models.Deteriorated
-
-	/*
-		switch v.VisitResponse.OwnershipStatus {
-		case "Ejer":
-			write(20, 136, "X") // need to implement a models.propertyOwns or something
-		case "LejerBolig":
-			write(43, 204, "X")
-		}
-	*/
-	write(20, 206, "O") // owner
-	write(42, 206, "R") // renter
-	write(66, 206, "P") // Part andelsbolig
-
-	write(20, 212, "A") // alone
-	write(49, 212, "W") // with Others
-	write(87, 212, "S") // spouse
-
-	pdf.AddPage()
-	pdfwrite(pdf, "kommentarer: "+v.VisitResponse.Comments)
+	// more descriptive about the visit
 
 	// til slut billederne
 	for _, image := range v.VisitResponse.Images {
