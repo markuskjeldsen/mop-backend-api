@@ -342,8 +342,8 @@ func fillLifeBox(pdf *fpdf.Fpdf, v models.Visit, LifeBoxX float64, LifeBoxY floa
 
 	questionRow(pdf, "Debitor hjemme", optionalBoolToStr(v.VisitResponse.DebitorIsHome), "")
 	questionRow(pdf, "Civilstatus", civilStatusToString(v.VisitResponse.CivilStatus), "")
-	questionRow(pdf, "Kids u/18 hjemme", optionalUintToStr(v.VisitResponse.ChildrenUnder18), "")
-	questionRow(pdf, "Kids u/18 udeboende", optionalUintToStr(v.VisitResponse.ChildrenOver18), "")
+	questionRow(pdf, "Børn u/18 hjemme", optionalUintToStr(v.VisitResponse.ChildrenUnder18), "")
+	questionRow(pdf, "bønr u/18 udeboende", optionalUintToStr(v.VisitResponse.ChildrenOver18), "")
 
 	// Complex logic for child support
 	childSupportDetails := ""
