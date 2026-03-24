@@ -92,6 +92,16 @@ func PlanVisit(c *gin.Context) {
 		return
 	}
 
+	// to find the next group id
+	var visit models.Visit
+	var nextGroupId uint
+	result := initializers.DB.First(&visit).Where("group_id is not null").Order("group_id DESC")
+	if result.Error != nil {
+		nextGroupId = uint(1)
+	} else {
+		nextGroupId = *visit.GroupId + 1
+	}
+
 	headers := rows[0]
 	userIDUint, _ := strconv.ParseUint(userID, 10, 64)
 
@@ -138,6 +148,8 @@ func PlanVisit(c *gin.Context) {
 			AdvoproStatusText:   rowData["Comment 3"], // , statustekst
 			AdvoproDeadlineDate: rowData["Comment 4"], // , fristDato
 			AdvoproKlient:       rowData["Comment 5"], // , Klientnavn
+			// new group id
+			GroupId: &nextGroupId,
 		}
 
 		// 4. Database logic

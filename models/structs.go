@@ -123,6 +123,16 @@ type VisitStatusLog struct {
 	ChangedByID uint      `json:"changed_by_id"` // Optionally, reference User.ID
 }
 
+type VisitLog struct {
+	gorm.Model
+	VisitID     uint      `json:"visit_id" gorm:"not null"`
+	PreviousVal string    `json:"old_val"`
+	NewVal      string    `json:"new_val"`
+	ValType     string    `json:"val_type"`
+	ChangedAt   time.Time `json:"changed_at" gorm:"autoCreateTime"`
+	ChangedByID uint      `json:"changed_by_id"`
+}
+
 type VisitType struct {
 	gorm.Model
 	Text        string `json:"text"`
@@ -155,6 +165,8 @@ type Visit struct {
 	AdvoproStatusText   string `json:"advopro_status_text"`
 	AdvoproDeadlineDate string `json:"advopro_deadline_date"`
 	AdvoproKlient       string `json:"advopro_klient"`
+	// a new type of ID for grouping
+	GroupId *uint `json:"group_id"`
 }
 
 type VisitResponse struct {

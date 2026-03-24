@@ -344,6 +344,7 @@ var visit1 = models.Visit{
 	VisitTime:     "10:00 AM",
 	Debitors:      []models.Debitor{db1, db2},
 	StatusID:      3,
+	GroupId:       nil,
 }
 var visit2 = models.Visit{
 	UserID:        user.ID,
@@ -357,6 +358,7 @@ var visit2 = models.Visit{
 	VisitTime:     "12:00 AM",
 	Debitors:      []models.Debitor{db2, db3},
 	StatusID:      3,
+	GroupId:       nil,
 }
 var visit3 = models.Visit{
 	UserID:        user.ID,
@@ -370,6 +372,7 @@ var visit3 = models.Visit{
 	VisitDate:     time.Now(),
 	VisitTime:     "12:00 AM",
 	StatusID:      3,
+	GroupId:       ptr(uint(1)),
 }
 var visit4 = models.Visit{
 	UserID:        user.ID,
@@ -383,6 +386,7 @@ var visit4 = models.Visit{
 	VisitDate:     time.Now().AddDate(0, 0, 0),
 	VisitTime:     "18:00 AM",
 	StatusID:      3,
+	GroupId:       ptr(uint(1)),
 }
 var visit5 = models.Visit{
 	UserID:        user.ID,
@@ -397,6 +401,7 @@ var visit5 = models.Visit{
 	VisitTime:     "18:00 AM",
 	Visited:       true,
 	StatusID:      3,
+	GroupId:       ptr(uint(1)),
 }
 
 var visit6 = models.Visit{
@@ -412,6 +417,7 @@ var visit6 = models.Visit{
 	VisitTime:     "18:00 AM",
 	Visited:       false,
 	StatusID:      3,
+	GroupId:       ptr(uint(1)),
 }
 
 var visitResponse1 = models.VisitResponse{
