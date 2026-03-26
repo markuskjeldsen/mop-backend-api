@@ -14,3 +14,4 @@ data.db*
 .vscode
 .vscode/*
 internal/templates
+data_backup.db
