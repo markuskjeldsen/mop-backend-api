@@ -222,7 +222,7 @@ func pdfHeader(pdf *fpdf.Fpdf, v models.Visit) {
 
 	//box dimensions
 	box_width := float64(190)
-	box_heigt := float64(50)
+	box_heigt := float64(60)
 	box_cornerX := float64(10)
 	box_cornerY := float64(20)
 
@@ -241,31 +241,32 @@ func pdfHeader(pdf *fpdf.Fpdf, v models.Visit) {
 
 	pdf.SetXY(10, 10)
 	pdf.SetFont("Roboto", "", pdflargerFontSize)
-
-	pdf.CellFormat(0, 10, strings.ToUpper(v.Type.Text), "", 0, "", false, 0, "")
+	pdf.CellFormat(0, 10, strings.ToUpper(v.Type.Text), "", 1, "", false, 0, "")
 	pdf.SetFont("Roboto", "", pdfnormalFontSize)
 
 	// first a large box
 	pdf.Rect(box_cornerX, box_cornerY, box_width, box_heigt, "D")
 	pdf.SetXY(10, 20)
 
-	// case information
-	pdf.CellFormat(30, 6, "Sagsnr:", "", 0, "", false, 0, "")
+	// Case information - Adjusted widths to prevent Address overlap
+	pdf.CellFormat(20, 6, "Sagsnr:", "", 0, "", false, 0, "")
 	pdf.CellFormat(30, 6, fmt.Sprint(v.Sagsnr), "", 0, "", false, 0, "")
 	pdf.CellFormat(15, 6, "Adresse:", "", 0, "", false, 0, "")
-	pdf.CellFormat(75, 6, v.Address, "", 0, "", false, 0, "")
-	pdf.CellFormat(10, 6, "BesøgsId:", "", 0, "R", false, 0, "")
-	pdf.CellFormat(30, 6, fmt.Sprint(v.ID), "", 1, "R", false, 0, "")
+	// We use a slightly smaller width here and let it truncate or handle logic
+	pdf.CellFormat(85, 6, v.Address, "", 0, "L", false, 0, "")
+	pdf.CellFormat(15, 6, "BesøgsId:", "", 0, "", false, 0, "")
+	pdf.CellFormat(25, 6, fmt.Sprint(v.ID), "", 1, "R", false, 0, "")
 
-	// visit information
-	pdf.CellFormat(30, 6, "Dato", "", 0, "", false, 0, "")
+	// Visit information
+	pdf.CellFormat(20, 6, "Dato", "", 0, "", false, 0, "")
 	pdf.CellFormat(30, 6, v.VisitDate.Format("2006-01-02"), "", 0, "", false, 0, "")
-	pdf.CellFormat(20, 6, "Kl:", "", 0, "", false, 0, "")
+	pdf.CellFormat(10, 6, "Kl:", "", 0, "", false, 0, "")
 	pdf.CellFormat(40, 6, v.VisitResponse.ActTime, "", 1, "", false, 0, "")
 
-	pdf.CellFormat(40, 6, "", "", 1, "", false, 0, "")
-	//debitor information
+	pdf.Ln(2) // Small gap
 	pdf.CellFormat(40, 6, "Debitorer:", "", 1, "", false, 0, "")
+	//debitor information
+
 	for _, deb := range v.Debitors {
 		phone := strings.TrimSpace(deb.Phone)
 		if phone == "" {
@@ -273,27 +274,37 @@ func pdfHeader(pdf *fpdf.Fpdf, v models.Visit) {
 		}
 		AdvoproDebitor := fmt.Sprint(deb.AdvoproDebitorId)
 
-		pdf.CellFormat(5, 6, "", "", 0, "", false, 0, "")
-		pdf.CellFormat(10, 6, "Navn:", "", 0, "", false, 0, "")
-		pdf.CellFormat(65, 6, deb.Name, "", 0, "", false, 0, "")
-		pdf.CellFormat(4, 6, "tlf:", "", 0, "", false, 0, "")
-		pdf.CellFormat(20, 6, phone, "", 0, "", false, 0, "")
-		pdf.CellFormat(8, 6, "mail:", "", 0, "", false, 0, "")
-		pdf.CellFormat(50, 6, deb.Email, "", 0, "", false, 0, "")
-		pdf.CellFormat(10, 6, "debitorId:", "", 0, "", false, 0, "")
-		pdf.CellFormat(19, 6, AdvoproDebitor, "", 1, "R", false, 0, "")
+		// 1. NAME LINE (Using MultiCell to allow wrapping)
+		pdf.SetX(15)          // Indent
+		pdf.SetFontStyle("B") // Optional: make name bold
+		pdf.CellFormat(12, 5, "Navn:", "", 0, "", false, 0, "")
+		pdf.SetFontStyle("")
+
+		// MultiCell will wrap the text if it exceeds 160 units
+		// The '1' at the end moves the cursor to the next line automatically
+		pdf.MultiCell(160, 5, deb.Name, "", "L", false)
+
+		// 2. CONTACT INFO LINE (Below the name)
+		pdf.SetX(20)                           // Further indent for details
+		pdf.SetFontSize(pdfnormalFontSize - 1) // Optional: slightly smaller text for details
+
+		contactLine := fmt.Sprintf("tlf: %s  |  mail: %s  |  debitorId: %s", phone, deb.Email, AdvoproDebitor)
+		pdf.CellFormat(0, 5, contactLine, "", 1, "L", false, 0, "")
+
+		pdf.Ln(1) // Small space between different debitors
+		pdf.SetFontSize(pdfnormalFontSize)
 	}
 	// time spent
 	duration := time.Duration(v.VisitResponse.Duration) * time.Millisecond
 
 	// worker information
-	pdf.SetXY(box_cornerX, box_cornerY+box_heigt-5)
+	pdf.SetXY(box_cornerX, box_cornerY+box_heigt-7)
 	pdf.CellFormat(20, 6, "Konsulent:", "", 0, "", false, 0, "")
 	pdf.CellFormat(40, 6, v.User.Name, "", 0, "", false, 0, "")
 	pdf.CellFormat(10, 6, "tlf:", "", 0, "", false, 0, "")
 	pdf.CellFormat(40, 6, v.User.Phone, "", 0, "", false, 0, "")
-	pdf.CellFormat(20, 6, "tidsforbrug:", "", 0, "", false, 0, "")
-	pdf.CellFormat(40, 6, duration.String(), "", 1, "R", false, 0, "")
+	pdf.CellFormat(25, 6, "tidsforbrug:", "", 0, "", false, 0, "")
+	pdf.CellFormat(0, 6, duration.String(), "", 1, "R", false, 0, "")
 
 }
 
