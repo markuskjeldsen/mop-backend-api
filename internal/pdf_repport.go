@@ -252,10 +252,10 @@ func pdfHeader(pdf *fpdf.Fpdf, v models.Visit) {
 	// case information
 	pdf.CellFormat(30, 6, "Sagsnr:", "", 0, "", false, 0, "")
 	pdf.CellFormat(30, 6, fmt.Sprint(v.Sagsnr), "", 0, "", false, 0, "")
-	pdf.CellFormat(20, 6, "Adresse:", "", 0, "", false, 0, "")
-	pdf.CellFormat(40, 6, v.Address, "", 0, "", false, 0, "")
-	pdf.CellFormat(30, 6, "BesøgsId:", "", 0, "R", false, 0, "")
-	pdf.CellFormat(40, 6, fmt.Sprint(v.ID), "", 1, "R", false, 0, "")
+	pdf.CellFormat(15, 6, "Adresse:", "", 0, "", false, 0, "")
+	pdf.CellFormat(75, 6, v.Address, "", 0, "", false, 0, "")
+	pdf.CellFormat(10, 6, "BesøgsId:", "", 0, "R", false, 0, "")
+	pdf.CellFormat(30, 6, fmt.Sprint(v.ID), "", 1, "R", false, 0, "")
 
 	// visit information
 	pdf.CellFormat(30, 6, "Dato", "", 0, "", false, 0, "")
@@ -275,13 +275,13 @@ func pdfHeader(pdf *fpdf.Fpdf, v models.Visit) {
 
 		pdf.CellFormat(5, 6, "", "", 0, "", false, 0, "")
 		pdf.CellFormat(10, 6, "Navn:", "", 0, "", false, 0, "")
-		pdf.CellFormat(50, 6, deb.Name, "", 0, "", false, 0, "")
+		pdf.CellFormat(65, 6, deb.Name, "", 0, "", false, 0, "")
 		pdf.CellFormat(4, 6, "tlf:", "", 0, "", false, 0, "")
-		pdf.CellFormat(25, 6, phone, "", 0, "", false, 0, "")
+		pdf.CellFormat(20, 6, phone, "", 0, "", false, 0, "")
 		pdf.CellFormat(8, 6, "mail:", "", 0, "", false, 0, "")
 		pdf.CellFormat(50, 6, deb.Email, "", 0, "", false, 0, "")
-		pdf.CellFormat(15, 6, "debitorId:", "", 0, "", false, 0, "")
-		pdf.CellFormat(20, 6, AdvoproDebitor, "", 1, "R", false, 0, "")
+		pdf.CellFormat(10, 6, "debitorId:", "", 0, "", false, 0, "")
+		pdf.CellFormat(19, 6, AdvoproDebitor, "", 1, "R", false, 0, "")
 	}
 	// time spent
 	duration := time.Duration(v.VisitResponse.Duration) * time.Millisecond
