@@ -76,6 +76,8 @@ func ExecuteQuery(server, database, query string, params ...interface{}) ([]map[
 
 	rows, err := db.Query(query, params...)
 	if err != nil {
+		fmt.Println(query)
+		fmt.Println(params...)
 		fmt.Print(err.Error())
 		return nil, fmt.Errorf("Query could not be executed: %w", err)
 	}
