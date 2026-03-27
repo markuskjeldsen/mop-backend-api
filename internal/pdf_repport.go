@@ -456,23 +456,32 @@ func pdfBody(pdf *fpdf.Fpdf, v models.Visit) {
 	// ----------------------------    ------------------------
 	//
 
-	// how low the boxes are
-	CarLifeY := 80.0
-	financeY := 130.0 + 10.0  // padding
-	CommentsY := 190.0 + 10.0 // padding
-
-	CarX := 10.0
-	LifeX := 110.0
-	financeX := 10.0
-	CommentsX := 10.0
-
-	boxWidth := 90.0
-	CommentsWidth := 190.0
-
+	// sizing
 	boxHeightCar := 50.0
 	boxHeightLife := 110.0
 	boxHeightFinance := 25.0
 	boxHeightComments := 50.0
+
+	boxWidth := 90.0
+	CommentsWidth := 190.0
+
+	// header placement
+	//HEADER_width := float64(190)
+	HEADER_heigt := float64(60) // Increased from 50 to 60
+	HEADER_cornerX := float64(10)
+	HEADER_cornerY := float64(20)
+
+	// how low the boxes are
+	CarLifeY := 10.0 + HEADER_cornerY + HEADER_heigt // 30 margin
+
+	CarX := HEADER_cornerX // should be the same as the header
+	LifeX := CarX + boxWidth + 10.0
+
+	financeY := 10.0 + CarLifeY + boxHeightCar
+	CommentsY := 10.0 + CarLifeY + boxHeightLife // comments are below finance
+
+	financeX := HEADER_cornerX  // should be the same as the header
+	CommentsX := HEADER_cornerX // should be the same as the header
 
 	// left box (CAR)
 	pdf.Rect(CarX, CarLifeY, boxWidth, boxHeightCar, "D")
