@@ -191,6 +191,13 @@ func PlannedVisits(c *gin.Context) {
 	c.JSON(200, users)
 }
 
+// we need a new function that gives patrick an excel sheet that
+// it is used for pulling the visit data out to Inkasso afdelingen which then send out letters
+// perhaps get them by the group
+func PlannedVisitsExcel(c *gin.Context) {
+
+}
+
 func PatchVisit(c *gin.Context) {
 	var visit models.Visit
 	visitIDStr := c.Param("id")

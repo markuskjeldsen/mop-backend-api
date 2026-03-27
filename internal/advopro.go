@@ -3,7 +3,6 @@ package internal
 import (
 	"database/sql"
 	"fmt"
-	"log"
 	"os"
 	"strconv"
 	"strings"
@@ -70,22 +69,22 @@ func ExecuteQuery(server, database, query string, params ...interface{}) ([]map[
 
 	db, err := sql.Open("sqlserver", conn)
 	if err != nil {
-		fmt.Println("server could not be opened")
-		return nil, err
+		fmt.Print(err.Error())
+		return nil, fmt.Errorf("server could not be opened: %w", err)
 	}
 	defer db.Close()
 
 	rows, err := db.Query(query, params...)
 	if err != nil {
-		fmt.Println("Query could not be executed")
-		return nil, err
+		fmt.Print(err.Error())
+		return nil, fmt.Errorf("Query could not be executed: %w", err)
 	}
 	defer rows.Close()
 
 	cols, err := rows.Columns()
 	if err != nil {
-		fmt.Println("Somthing went wrong in the data parsing")
-		return nil, err
+		fmt.Print(err.Error())
+		return nil, fmt.Errorf("failed to fetch column names from database: %w", err)
 	}
 
 	var results []map[string]interface{}
@@ -230,21 +229,25 @@ type DebtRow struct {
 	Sagsfremstillinger    string
 }
 
-func CurrentDebtCase(sagsnr uint) []DebtRow {
+func CurrentDebtCase(sagsnr uint) ([]DebtRow, error) {
+	// 1. Error handling with context
 	debts, err := ExecuteQuery(Server, AdvoPro, debtInfo, sagsnr)
 	if err != nil {
-		log.Fatalln(err.Error())
+		return nil, fmt.Errorf("failed to execute debt query for sagsnr %d: %w", sagsnr, err)
 	}
 
-	var result []DebtRow
+	// 2. Pre-allocate slice capacity to avoid re-allocations in the loop
+	result := make([]DebtRow, 0, len(debts))
+
 	for _, debt := range debts {
+		// 3. Use a helper to safely extract values and prevent panics
 		row := DebtRow{
-			SumIndbetalinger:      byteToFloat(debt["SumIndbetalinger"].([]byte)),
-			RestgeldAntaget:       byteToFloat(debt["restgeldAntaget"].([]byte)),
-			RestanceDato:          toTime(debt["RestanceDato"]), // adjust type if needed!
-			KreditorHovedstol:     byteToFloat(debt["KreditorHovedstol"].([]byte)),
-			RestgeldVedBrev:       byteToFloat(debt["restgeldVedBrev"].([]byte)),
-			SumIndbetalingVedBrev: byteToFloat(debt["SumIndbetalingVedBrev"].([]byte)),
+			SumIndbetalinger:      safeByteToFloat(debt["SumIndbetalinger"]),
+			RestgeldAntaget:       safeByteToFloat(debt["restgeldAntaget"]),
+			RestanceDato:          toTime(debt["RestanceDato"]),
+			KreditorHovedstol:     safeByteToFloat(debt["KreditorHovedstol"]),
+			RestgeldVedBrev:       safeByteToFloat(debt["restgeldVedBrev"]),
+			SumIndbetalingVedBrev: safeByteToFloat(debt["SumIndbetalingVedBrev"]),
 			Fordringsbeskrivelser: toString(debt["Fordringsbeskrivelser"]),
 			Sagsfremstillinger:    toString(debt["Sagsfremstillinger"]),
 		}
@@ -252,7 +255,16 @@ func CurrentDebtCase(sagsnr uint) []DebtRow {
 		result = append(result, row)
 	}
 
-	return result
+	return result, nil
+}
+
+// safeByteToFloat prevents panics if the value is nil or not []byte
+func safeByteToFloat(val interface{}) float64 {
+	b, ok := val.([]byte)
+	if !ok || b == nil {
+		return 0.0
+	}
+	return byteToFloat(b)
 }
 
 // Converts []byte to float64, returns 0.0 on error

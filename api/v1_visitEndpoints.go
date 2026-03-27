@@ -357,7 +357,15 @@ func DebtInformation(c *gin.Context) {
 		})
 		return
 	}
-	data := internal.CurrentDebtCase(visit.Sagsnr)
+	data, err := internal.CurrentDebtCase(visit.Sagsnr)
+	// if an error occurs then just dont send any info
+	if err != nil {
+		fmt.Println(err.Error())
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
 
 	c.JSON(http.StatusOK, data)
 
