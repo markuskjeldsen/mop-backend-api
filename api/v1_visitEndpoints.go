@@ -286,14 +286,21 @@ func CreateVisitResponse(c *gin.Context) {
 
 // POST /visit-response/:id/images
 func UploadVisitImage(c *gin.Context) {
-	visitIDdata := c.Param("id")
-	visitID, _ := strconv.ParseUint(visitIDdata, 10, 32)
+	visitResponseIDdata := c.Param("id")
+	visitResponseID, _ := strconv.ParseUint(visitResponseIDdata, 10, 32)
 
 	// 1. Fetch the Visit to get Sagsnr and ID
-	var visit models.Visit
-	if err := initializers.DB.First(&visit, visitID).Error; err != nil {
+	var visitResponse models.VisitResponse
+	if err := initializers.DB.First(&visitResponse, visitResponseID).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Visit not found"})
 		return
+	}
+
+	var visit models.Visit
+	if err := initializers.DB.First(&visit, visitResponse.VisitID).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		return
+
 	}
 
 	// 2. Get the file from the request
@@ -305,7 +312,7 @@ func UploadVisitImage(c *gin.Context) {
 
 	// 3. Create the database record first (to get the image.ID)
 	image := models.VisitResponseImage{
-		VisitResponseID: uint(visitID),
+		VisitResponseID: uint(visitResponseID),
 		OriginalName:    file.Filename,
 		ImagePath:       "pending", // Temporary placeholder
 	}
@@ -316,9 +323,9 @@ func UploadVisitImage(c *gin.Context) {
 	}
 
 	// 4. Construct the new filename
-	// Format: {Sagsnr}_{VisitID}_{ImageID}.extension
+	// Format: {Sagsnr}_{visitResponseID}_{ImageID}.extension
 	extension := filepath.Ext(file.Filename)
-	newFileName := fmt.Sprintf("%d_%d_%d%s", visit.Sagsnr, visit.ID, image.ID, extension)
+	newFileName := fmt.Sprintf("%d_%d_%d%s", visit.Sagsnr, visitResponse.ID, image.ID, extension)
 
 	// Define your upload directory (ensure this folder exists)
 	uploadDir := "uploads/visit_images"
