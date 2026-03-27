@@ -75,7 +75,7 @@ func main() {
 }
 
 func migrateTables() {
-	initializers.DB.AutoMigrate(
+	err := initializers.DB.AutoMigrate(
 		&models.User{},
 		&models.Debitor{},
 		&models.Visit{},
@@ -88,6 +88,11 @@ func migrateTables() {
 		&models.VisitType{},
 		&models.ActivityLog{},
 	)
+	if err != nil {
+		fmt.Println(err.Error())
+		return
+	}
+	fmt.Println("Migration went well")
 }
 
 func resetPassword(id uint) {
