@@ -95,7 +95,7 @@ func PlanVisit(c *gin.Context) {
 	// to find the next group id
 	var visit models.Visit
 	var nextGroupId uint
-	result := initializers.DB.First(&visit).Where("group_id is not null").Order("group_id DESC")
+	result := initializers.DB.Where("group_id IS NOT NULL").Order("group_id DESC").First(&visit)
 	if result.Error != nil {
 		nextGroupId = uint(1)
 	} else {

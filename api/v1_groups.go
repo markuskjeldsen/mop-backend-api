@@ -53,8 +53,9 @@ func ChangeGroupId(c *gin.Context) {
 		}
 
 		// Logic for synchronizing fields based on the new group
-		var newVisitDate time.Time
-		var newUserID uint // This represents the Konsulent
+		// if the target value is nil, removing a visit from a group, then it keeps its values just not the group id
+		var newVisitDate time.Time = visit.VisitDate
+		var newUserID uint = visit.UserID // This represents the Konsulent 1 is a default value since a visit must belong to a user
 
 		if input.TargetGroupId != nil {
 			var sibling models.Visit
@@ -68,9 +69,24 @@ func ChangeGroupId(c *gin.Context) {
 				newVisitDate = sibling.VisitDate
 				newUserID = sibling.UserID
 			} else if errors.Is(err, gorm.ErrRecordNotFound) {
-				// No members found: Set to zero values (frontend will handle assignment)
-				newVisitDate = time.Time{}
-				newUserID = 0
+				// No members found: the group will contain the current values of the visit
+				// this means that this is the first visit of the group also meaning it should get a new group ID
+
+				// to find the next group id
+				var visitGroup models.Visit
+				var nextGroupId uint
+				result := tx.Where("group_id IS NOT NULL").Order("group_id DESC").First(&visitGroup)
+				if result.Error != nil {
+					nextGroupId = uint(1)
+				} else {
+					if visitGroup.GroupId == nil {
+						nextGroupId = 1
+					} else {
+						nextGroupId = *visitGroup.GroupId + 1
+					}
+				}
+				// update the target group id to be something else
+				input.TargetGroupId = &nextGroupId
 			} else {
 				return err
 			}

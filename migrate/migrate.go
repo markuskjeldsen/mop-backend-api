@@ -87,6 +87,7 @@ func migrateTables() {
 		&models.AuthAttempt{},
 		&models.VisitType{},
 		&models.ActivityLog{},
+		&models.VisitLog{},
 	)
 	if err != nil {
 		fmt.Println(err.Error())

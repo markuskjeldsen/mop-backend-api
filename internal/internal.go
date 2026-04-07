@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/markuskjeldsen/mop-backend-api/initializers"
 	"github.com/markuskjeldsen/mop-backend-api/models"
@@ -148,7 +149,10 @@ func UpdateVisitValue(db *gorm.DB, visitID uint, newVal string, userID uint, fie
 		} else {
 			oldVal = "0"
 		}
-		// ... (rest of your switch case)
+	case "user_id":
+		oldVal = fmt.Sprintf("%v", visit.UserID)
+	case "visit_date":
+		oldVal = visit.VisitDate.Format(time.RFC3339)
 	}
 
 	log := models.VisitLog{
