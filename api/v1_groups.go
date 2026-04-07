@@ -249,50 +249,80 @@ func RemoveFromGroup(c *gin.Context) {
 }
 
 func ChangeKonsulent(c *gin.Context) {
-	user, ok := getVerifyUser(c)
+	// 1. Get current Admin user for logging
+	adminUser, ok := getVerifyUser(c)
 	if !ok {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "something went wrong doing verifyUser"})
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Unauthorized"})
 		return
 	}
 
+	// 2. Get Group ID from Param
 	groupIdStr := c.Param("groupId")
 	groupId, err := strconv.ParseUint(groupIdStr, 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid group ID"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid Group ID"})
 		return
 	}
 
+	// 3. Get the new Konsulent (User ID) from request body
 	var input struct {
-		NewUserID uint `json:"newUserId"`
+		NewKonsulentId uint `json:"newKonsulentId" binding:"required"`
 	}
 	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "New user ID is required"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "newKonsulentId is required"})
 		return
 	}
 
+	// 4. Run in a Transaction
 	err = initializers.DB.Transaction(func(tx *gorm.DB) error {
+		// A. Find all visits in this group to log the changes
 		var visits []models.Visit
-
 		if err := tx.Where("group_id = ?", groupId).Find(&visits).Error; err != nil {
 			return err
 		}
 
 		if len(visits) == 0 {
-			return errors.New("no visits found in group")
+			return errors.New("no visits found in this group")
 		}
 
+		// B. Log the change for every visit in the group
 		for _, v := range visits {
-			if err := internal.UpdateVisitValue(tx, v.ID, fmt.Sprintf("%d", input.NewUserID), user.ID, "user_id"); err != nil {
+			// Skip logging if the konsulent is already the same
+			if v.UserID == input.NewKonsulentId {
+				continue
+			}
+
+			err := internal.UpdateVisitValue(
+				tx,
+				v.ID,
+				fmt.Sprintf("%v", input.NewKonsulentId),
+				adminUser.ID,
+				"user_id",
+			)
+			if err != nil {
 				return err
 			}
 		}
 
-		return tx.Model(&models.Visit{}).Where("group_id = ?", groupId).Update("user_id", input.NewUserID).Error
+		// C. Perform Batch Update for the whole group
+		// We use .Model(&models.Visit{}) to specify the table and .Where to filter
+		result := tx.Model(&models.Visit{}).
+			Where("group_id = ?", groupId).
+			Update("user_id", input.NewKonsulentId)
+
+		if result.Error != nil {
+			return result.Error
+		}
+
+		return nil
 	})
 
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"message": "Group konsulent updated successfully"})
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Every visit in the group has been assigned to the new konsulent",
+	})
 }
