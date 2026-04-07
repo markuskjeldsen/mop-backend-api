@@ -57,9 +57,9 @@ func start_server() {
 		apiv1.GET("/health", api.Hello) // just returns "hello from the api"  in JSON
 		apiv1.GET("/verifytoken", middleware.RequireAuthUser, api.Verifytoken)
 
-		apiv1.GET("/users", middleware.RequireAuthAdmin, api.GetUsers)          // Adding a route to the group
-		apiv1.GET("/user", middleware.RequireAuthUser, api.GetUser)             // Adding a route to the group
-		apiv1.GET("/users/:id", middleware.RequireAuthUser, api.GetUserByParam) // Adding a route to the group
+		apiv1.GET("/users", middleware.RequireAuthAdmin, api.GetUsers)          // gets all the users
+		apiv1.GET("/user", middleware.RequireAuthUser, api.GetUser)             // gets data about acting user and their visits
+		apiv1.GET("/users/:id", middleware.RequireAuthUser, api.GetUserByParam) // get data about specific user
 		apiv1.PATCH("/users/:id", middleware.RequireAuthUser, api.Patch)
 		apiv1.PATCH("/users/:id/password", middleware.RequireAuthUser, api.ChangePassword)
 
