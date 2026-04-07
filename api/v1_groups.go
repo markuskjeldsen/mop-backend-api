@@ -15,10 +15,11 @@ import (
 )
 
 func ChangeGroupId(c *gin.Context) {
-	// 1. Verify User
-	user, ok := getVerifyUser(c)
+	// 1. Get current Admin user for logging purposes
+	// (Assuming getVerifyUser or your middleware provides the user object)
+	adminUser, ok := getVerifyUser(c)
 	if !ok {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "something went wrong doing verifyUser"})
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Unauthorized or session expired"})
 		return
 	}
 
@@ -26,43 +27,79 @@ func ChangeGroupId(c *gin.Context) {
 	visitIDStr := c.Param("id")
 	visitID, err := strconv.ParseUint(visitIDStr, 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid ID"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid Visit ID"})
 		return
 	}
 
-	// 3. TODO: Get target group from request body instead of hardcoding
-	// Example: targetGroupId := c.PostForm("targetGroupId")
-	targetGroupId := uint64(10)
+	// 3. Get target group from request body
+	var input struct {
+		TargetGroupId *uint `json:"targetGroupId"`
+	}
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Target Group ID is required"})
+		return
+	}
 
 	// 4. Run in a Transaction
 	err = initializers.DB.Transaction(func(tx *gorm.DB) error {
 		var visit models.Visit
 
-		// Fetch existing record to verify ownership and get the "old" GroupID
-		// We add a check for user_id to ensure the user owns this visit
-		if err := tx.Where("id = ? AND user_id = ?", visitID, user.ID).First(&visit).Error; err != nil {
+		// Fetch the visit (No ownership check here, as admin has full access)
+		if err := tx.First(&visit, visitID).Error; err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return errors.New("visit not found or access denied")
+				return errors.New("visit not found")
 			}
 			return err
 		}
 
-		// 1. LOG FIRST (while DB still has old value)
-		// We pass 'tx' so it's part of this atomic block
-		err := internal.UpdateVisitValue(tx, uint(visitID), fmt.Sprintf("%v", targetGroupId), user.ID, "group_id")
-		if err != nil {
+		// Logic for synchronizing fields based on the new group
+		var newVisitDate time.Time
+		var newUserID uint // This represents the Konsulent
+
+		if input.TargetGroupId != nil {
+			var sibling models.Visit
+			// Try to find another member of the target group
+			err := tx.Where("group_id = ? AND id != ?", *input.TargetGroupId, visitID).
+				Select("user_id", "visit_date").
+				First(&sibling).Error
+
+			if err == nil {
+				// Member found: Copy their visit date and konsulent (UserID)
+				newVisitDate = sibling.VisitDate
+				newUserID = sibling.UserID
+			} else if errors.Is(err, gorm.ErrRecordNotFound) {
+				// No members found: Set to zero values (frontend will handle assignment)
+				newVisitDate = time.Time{}
+				newUserID = 0
+			} else {
+				return err
+			}
+		}
+
+		// 1. LOG changes (before updating the record)
+		groupLogVal := "NULL"
+		if input.TargetGroupId != nil {
+			groupLogVal = fmt.Sprintf("%v", *input.TargetGroupId)
+		}
+		if err := internal.UpdateVisitValue(tx, uint(visitID), groupLogVal, adminUser.ID, "group_id"); err != nil {
 			return err
 		}
 
-		// 2. UPDATE SECOND
-		return tx.Model(&models.Visit{}).Where("id = ?", visitID).Update("group_id", targetGroupId).Error
+		// 2. UPDATE Visit
+		// We use a map with Updates to ensure GORM doesn't ignore "zero values" (like 0 or empty time)
+		return tx.Model(&visit).Updates(map[string]interface{}{
+			"group_id":   input.TargetGroupId,
+			"visit_date": newVisitDate,
+			"user_id":    newUserID,
+		}).Error
 	})
 
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"message": "Visit moved successfully"})
+
+	c.JSON(http.StatusOK, gin.H{"message": "Visit group and konsulent updated successfully"})
 }
 
 func ChangeGroupDate(c *gin.Context) {
@@ -79,28 +116,47 @@ func ChangeGroupDate(c *gin.Context) {
 		return
 	}
 
-	newDate := time.Now()
-	newDateStr := newDate.Format(time.RFC3339)
+	var input struct {
+		NewDate string `json:"newDate"`
+	}
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "New date is required"})
+		return
+	}
+
+	parsedDate, err := time.Parse("2006-01-02", input.NewDate)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid date format. Use YYYY-MM-DD"})
+		return
+	}
 
 	err = initializers.DB.Transaction(func(tx *gorm.DB) error {
 		var visits []models.Visit
 
-		// 1. Find all visits in this group BEFORE updating
 		if err := tx.Where("group_id = ?", groupId).Find(&visits).Error; err != nil {
 			return err
 		}
 
-		// 2. Log for each visit
+		if len(visits) == 0 {
+			return errors.New("no visits found in group")
+		}
+
+		for _, v := range visits {
+			if v.StatusID == 3 {
+				return errors.New("cannot change date: letter has already been sent for one or more visits in this group")
+			}
+		}
+
+		newDateStr := parsedDate.Format(time.RFC3339)
 		for _, v := range visits {
 			if err := internal.UpdateVisitValue(tx, v.ID, newDateStr, user.ID, "visit_date"); err != nil {
 				return err
 			}
 		}
 
-		// 3. Perform the bulk update
-		return tx.Model(&models.Visit{}).Where("group_id = ?", groupId).Update("visit_date", newDate).Error
+		return tx.Model(&models.Visit{}).Where("group_id = ?", groupId).Update("visit_date", parsedDate).Error
 	})
-	// check if the transacion went well
+
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -190,4 +246,53 @@ func RemoveFromGroup(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Visits successfully removed from group"})
+}
+
+func ChangeKonsulent(c *gin.Context) {
+	user, ok := getVerifyUser(c)
+	if !ok {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "something went wrong doing verifyUser"})
+		return
+	}
+
+	groupIdStr := c.Param("groupId")
+	groupId, err := strconv.ParseUint(groupIdStr, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid group ID"})
+		return
+	}
+
+	var input struct {
+		NewUserID uint `json:"newUserId"`
+	}
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "New user ID is required"})
+		return
+	}
+
+	err = initializers.DB.Transaction(func(tx *gorm.DB) error {
+		var visits []models.Visit
+
+		if err := tx.Where("group_id = ?", groupId).Find(&visits).Error; err != nil {
+			return err
+		}
+
+		if len(visits) == 0 {
+			return errors.New("no visits found in group")
+		}
+
+		for _, v := range visits {
+			if err := internal.UpdateVisitValue(tx, v.ID, fmt.Sprintf("%d", input.NewUserID), user.ID, "user_id"); err != nil {
+				return err
+			}
+		}
+
+		return tx.Model(&models.Visit{}).Where("group_id = ?", groupId).Update("user_id", input.NewUserID).Error
+	})
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "Group konsulent updated successfully"})
 }
