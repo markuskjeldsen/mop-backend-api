@@ -266,10 +266,10 @@ func ChangeKonsulent(c *gin.Context) {
 
 	// 3. Get the new Konsulent (User ID) from request body
 	var input struct {
-		NewKonsulentId uint `json:"newKonsulentId" binding:"required"`
+		NewUserID uint `json:"newUserId" binding:"required"`
 	}
 	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "newKonsulentId is required"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "NewUserID is required"})
 		return
 	}
 
@@ -288,14 +288,14 @@ func ChangeKonsulent(c *gin.Context) {
 		// B. Log the change for every visit in the group
 		for _, v := range visits {
 			// Skip logging if the konsulent is already the same
-			if v.UserID == input.NewKonsulentId {
+			if v.UserID == input.NewUserID {
 				continue
 			}
 
 			err := internal.UpdateVisitValue(
 				tx,
 				v.ID,
-				fmt.Sprintf("%v", input.NewKonsulentId),
+				fmt.Sprintf("%v", input.NewUserID),
 				adminUser.ID,
 				"user_id",
 			)
@@ -308,7 +308,7 @@ func ChangeKonsulent(c *gin.Context) {
 		// We use .Model(&models.Visit{}) to specify the table and .Where to filter
 		result := tx.Model(&models.Visit{}).
 			Where("group_id = ?", groupId).
-			Update("user_id", input.NewKonsulentId)
+			Update("user_id", input.NewUserID)
 
 		if result.Error != nil {
 			return result.Error
