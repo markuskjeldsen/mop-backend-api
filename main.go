@@ -84,10 +84,11 @@ func start_server() {
 		apiv1.POST("/visits/create", middleware.RequireAuthAdmin, api.VisitCreation)                 // creates thoses visits
 		apiv1.GET("/visits/create", middleware.RequireAuthAdmin, api.CreatedVisits)                  // retrives the created visits that have not yet been planned
 
-		apiv1.PATCH("/visits/:id/group", middleware.RequireAuthAdmin, api.ChangeGroupId)             // move a singe visit to a new groupId
-		apiv1.PATCH("/visits/group/:groupId/date", middleware.RequireAuthAdmin, api.ChangeGroupDate) // change the date of all visits with a groupID
-		apiv1.GET("/visits/group/:groupId", middleware.RequireAuthAdmin, api.GetInGroup)             // get all the visits in a group
-		apiv1.DELETE("/visits/group/:groupId", middleware.RequireAuthAdmin, api.RemoveFromGroup)     // removes the visits from a group. sets GroupID = 0 for all visits in that group
+		apiv1.PATCH("/visits/:id/group", middleware.RequireAuthAdmin, api.ChangeGroupId)                  // move a singe visit to a new groupId
+		apiv1.PATCH("/visits/group/:groupId/date", middleware.RequireAuthAdmin, api.ChangeGroupDate)      // change the date of all visits with a groupID
+		apiv1.GET("/visits/group/:groupId", middleware.RequireAuthAdmin, api.GetInGroup)                  // get all the visits in a group
+		apiv1.DELETE("/visits/group/:groupId", middleware.RequireAuthAdmin, api.RemoveFromGroup)          // removes the visits from a group. sets GroupID = 0 for all visits in that group
+		apiv1.PATCH("/visits/group/:groupId/konsulent", middleware.RequireAuthAdmin, api.ChangeKonsulent) // Change the konsulent/user, so a different one is going to perform the visits
 
 		apiv1.POST("/visits/visitfile", middleware.RequireAuthAdmin, api.VisitFile)     // generates a visit excel file so the visits can be planned without making another visit
 		apiv1.POST("/visits/plan", middleware.RequireAuthAdmin, api.PlanVisit)          // here visits are planned

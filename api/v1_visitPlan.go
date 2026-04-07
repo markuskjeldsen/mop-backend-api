@@ -99,7 +99,11 @@ func PlanVisit(c *gin.Context) {
 	if result.Error != nil {
 		nextGroupId = uint(1)
 	} else {
-		nextGroupId = *visit.GroupId + 1
+		if visit.GroupId == nil {
+			nextGroupId = 1
+		} else {
+			nextGroupId = *visit.GroupId + 1
+		}
 	}
 
 	headers := rows[0]
