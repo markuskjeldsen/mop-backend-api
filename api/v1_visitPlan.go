@@ -11,6 +11,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/markuskjeldsen/mop-backend-api/initializers"
 	"github.com/markuskjeldsen/mop-backend-api/internal"
+	"github.com/markuskjeldsen/mop-backend-api/internal/excel"
 	"github.com/markuskjeldsen/mop-backend-api/models"
 )
 
@@ -197,9 +198,37 @@ func PlannedVisits(c *gin.Context) {
 
 // we need a new function that gives patrick an excel sheet that
 // it is used for pulling the visit data out to Inkasso afdelingen which then send out letters
-// perhaps get them by the group
+// get them by the group
 func PlannedVisitsExcel(c *gin.Context) {
 
+	_, ok := getVerifyUser(c)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"message": "User could not be found from the token"})
+		return
+	}
+
+	groupIDStr := c.Param("groupId")
+	groupID, err := strconv.ParseUint(groupIDStr, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid ID"})
+		return
+	}
+
+	// get all visits in a group
+	var visits []models.Visit
+	result := initializers.DB.Preload("User").Preload("Debitors").Where("group_id = ?", groupID).Find(&visits)
+	if result.Error != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
+		return
+	}
+
+	file, err := excel.GenerateVisitsPlanExcel(visits)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	excel.SendExcelResponse(c, file, "PlanlagteBesog.xlsx")
 }
 
 func PatchVisit(c *gin.Context) {

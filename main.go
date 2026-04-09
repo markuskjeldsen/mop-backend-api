@@ -89,6 +89,7 @@ func start_server() {
 		apiv1.GET("/visits/group/:groupId", middleware.RequireAuthAdmin, api.GetInGroup)                  // get all the visits in a group
 		apiv1.DELETE("/visits/group/:groupId", middleware.RequireAuthAdmin, api.RemoveFromGroup)          // removes the visits from a group. sets GroupID = 0 for all visits in that group
 		apiv1.PATCH("/visits/group/:groupId/konsulent", middleware.RequireAuthAdmin, api.ChangeKonsulent) // Change the konsulent/user, so a different one is going to perform the visits
+		apiv1.GET("/visits/group/:groupId/planned", middleware.RequireAuthAdmin, api.PlannedVisitsExcel)  // gets the excel sheet for the inkasso afdeling enabeling easier workflow
 
 		apiv1.POST("/visits/visitfile", middleware.RequireAuthAdmin, api.VisitFile)     // generates a visit excel file so the visits can be planned without making another visit
 		apiv1.POST("/visits/plan", middleware.RequireAuthAdmin, api.PlanVisit)          // here visits are planned

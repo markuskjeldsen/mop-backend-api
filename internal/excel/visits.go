@@ -70,6 +70,92 @@ func GenerateVisitsExcel(visits []models.Visit) (*excelize.File, error) {
 	return f, nil
 }
 
+// GenerateVisitsPlanExcel creates the Excel file structure based on a slice of Visits for the inkasso afdeling,
+// and this will be retrived by the plannedVisits page
+// and thus must contain specific information
+// the data is contructed based on the group id
+// but we dont worry about that
+func GenerateVisitsPlanExcel(visits []models.Visit) (*excelize.File, error) {
+	f := excelize.NewFile()
+	sheetName := "Sheet1"
+
+	// stop
+	// sagsnr
+	// address
+	// arrival Time
+	// name (both if applicable)
+	// statuskode
+	// status tekst
+	// fristDato,
+	// klient (SCB auto Blanco/Jyske Finans, Nordea Finans Danmark)
+	// konsulent
+	// besoegs dato
+	// Interval
+
+	headers := []string{
+		"Stop nr",
+		"Sagsnr",
+		"Adresse",
+		"Ankomst tidspunkt",
+		"Navn",
+		"Statuskode",
+		"StatusTekst",
+		"Fristdato",
+		"Klient", // (SCB auto Blanco/Jyske Finans, Nordea Finans Danmark)
+		"Konsulent",
+		"BesøgsDato",
+		"Besøgsinterval",
+	} // len(headers) = 12
+
+	for i, h := range headers {
+		cell, _ := excelize.CoordinatesToCellName(i+1, 1)
+		f.SetCellValue(sheetName, cell, h)
+	}
+
+	replacer := strings.NewReplacer("\n", " ", "\r", " ")
+
+	for rowIdx, visit := range visits {
+		var debitorNames []string
+		for _, d := range visit.Debitors {
+			debitorNames = append(debitorNames, replacer.Replace(d.Name))
+		}
+		// stop
+		// sagsnr
+		// address
+		// arrival Time
+		// name (both if applicable)
+		// statuskode
+		// status tekst
+		// fristDato,
+		// klient (SCB auto Blanco/Jyske Finans, Nordea Finans Danmark)
+		// konsulent
+		// besoegs dato
+		// Interval
+
+		data := []interface{}{
+			visit.Stopnr,                           // stop
+			visit.Sagsnr,                           // sagsnr
+			replacer.Replace(visit.Address),        // address
+			visit.VisitTime,                        // arrival Time
+			strings.Join(debitorNames, ", "),       // name (both if applicable)
+			fmt.Sprintf("%d", visit.AdvoproStatus), // statuskode
+			visit.AdvoproStatusText,                // status tekst
+			visit.AdvoproDeadlineDate,              // fristDato
+			visit.AdvoproKlient,                    // klient (SCB auto Blanco/Jyske Finans, Nordea Finans Danmark)
+			visit.User.Name,                        // konsulent
+			visit.VisitDate,                        // besoegs dato
+			visit.VisitInterval,                    // Interval
+		}
+
+		for colIdx, value := range data {
+			cell, _ := excelize.CoordinatesToCellName(colIdx+1, rowIdx+2)
+			f.SetCellValue(sheetName, cell, value)
+		}
+	}
+
+	return f, nil
+}
+
 // SendExcelResponse handles the Gin-specific response headers and buffer writing
 func SendExcelResponse(c *gin.Context, f *excelize.File, filename string) {
 	var buf bytes.Buffer
