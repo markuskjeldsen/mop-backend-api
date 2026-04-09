@@ -261,7 +261,7 @@ func pdfHeader(pdf *fpdf.Fpdf, v models.Visit) {
 	pdf.CellFormat(20, 6, "Dato", "", 0, "", false, 0, "")
 	pdf.CellFormat(30, 6, v.VisitDate.Format("2006-01-02"), "", 0, "", false, 0, "")
 	pdf.CellFormat(10, 6, "Kl:", "", 0, "", false, 0, "")
-	pdf.CellFormat(40, 6, v.VisitResponse.ActTime, "", 1, "", false, 0, "")
+	pdf.CellFormat(40, 6, v.VisitResponse.ActTime[5:], "", 1, "", false, 0, "")
 
 	pdf.Ln(2) // Small gap
 	pdf.CellFormat(40, 6, "Debitorer:", "", 1, "", false, 0, "")
@@ -295,7 +295,7 @@ func pdfHeader(pdf *fpdf.Fpdf, v models.Visit) {
 		pdf.SetFontSize(pdfnormalFontSize)
 	}
 	// time spent
-	duration := time.Duration(v.VisitResponse.Duration) * time.Millisecond
+	// duration := time.Duration(v.VisitResponse.Duration) * time.Millisecond
 
 	// worker information
 	pdf.SetXY(box_cornerX, box_cornerY+box_heigt-7)
@@ -303,8 +303,8 @@ func pdfHeader(pdf *fpdf.Fpdf, v models.Visit) {
 	pdf.CellFormat(40, 6, v.User.Name, "", 0, "", false, 0, "")
 	pdf.CellFormat(10, 6, "tlf:", "", 0, "", false, 0, "")
 	pdf.CellFormat(40, 6, v.User.Phone, "", 0, "", false, 0, "")
-	pdf.CellFormat(25, 6, "tidsforbrug:", "", 0, "", false, 0, "")
-	pdf.CellFormat(0, 6, duration.String(), "", 1, "R", false, 0, "")
+	//pdf.CellFormat(25, 6, "tidsforbrug:", "", 0, "", false, 0, "")
+	//pdf.CellFormat(0, 6, duration.String(), "", 1, "R", false, 0, "")
 
 }
 
@@ -387,7 +387,7 @@ func fillCarBox(pdf *fpdf.Fpdf, v models.Visit, CarBoxX float64, CarBoxY float64
 	questionRow(pdf, "Er den ren?", optionalBoolToStr(v.VisitResponse.AssetCleaned), "")
 	questionRow(pdf, "Bilen afleveret?", optionalBoolToStr(v.VisitResponse.AssetDelivered), "")
 	questionRow(pdf, "Salgsfuldmagt underskrevet", optionalBoolToStr(v.VisitResponse.SFSigned), "")
-	questionRow(pdf, "Salgsaftale underskrevet", optionalBoolToStr(v.VisitResponse.SESigned), "SE")
+	questionRow(pdf, "Skylderklæring underskrevet", optionalBoolToStr(v.VisitResponse.SESigned), "")
 
 }
 
