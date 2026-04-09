@@ -181,7 +181,6 @@ func ChangeGroupDate(c *gin.Context) {
 }
 
 func GetInGroup(c *gin.Context) { // gets all the visits in a given group
-	// TODO: get all the visits in a given group
 	_, ok := getVerifyUser(c)
 	if !ok {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "something went wrong doing verifyUser"})

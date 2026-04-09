@@ -60,6 +60,7 @@ func CreateUser(c *gin.Context) {
 	// get data
 	var user models.User
 	var body struct {
+		Initials string `json:"initials" form:"initials" binding:"required"`
 		FullName string `json:"fullName" form:"fullName" binding:"required"`
 		Username string `json:"username" form:"name" binding:"required"`
 		Password string `json:"password" form:"password" binding:"required"`
@@ -114,6 +115,7 @@ func CreateUser(c *gin.Context) {
 		user.Rights = models.RightsUser
 	}
 
+	user.Initials = body.Initials
 	user.Name = body.FullName
 	user.Username = body.Username
 	user.Email = body.Email
@@ -231,41 +233,42 @@ func Patch(c *gin.Context) {
 	actingUser, _ := getVerifyUser(c)
 	id := c.Param("id")
 
+	// 1. Added Username and fixed the spelling of Initials
 	var userPatch struct {
-		Name   string `json:"name"`
-		Rights string `json:"rights,omitempty"`
-		Email  string `json:"email,omitempty"`
-		Phone  string `json:"phone,omitempty"`
+		Initials string `json:"initials"`
+		Username string `json:"username"`
+		Name     string `json:"name"`
+		Rights   string `json:"rights,omitempty"`
+		Email    string `json:"email,omitempty"`
+		Phone    string `json:"phone,omitempty"`
 	}
 	var user models.User
 
-	// Bind the JSON to userin
+	// Bind the JSON to userPatch
 	if err := c.ShouldBindBodyWithJSON(&userPatch); err != nil {
-		c.JSON(400, gin.H{"error": "Invalid input"})
 		fmt.Println(err.Error())
+		c.JSON(400, gin.H{"error": "Invalid input"})
 		return
 	}
 
-	// Find the user by ID
+	// Find the user by ID (Authoritative data)
 	if err := initializers.DB.First(&user, id).Error; err != nil {
 		c.JSON(404, gin.H{"error": "User not found"})
 		return
 	}
 
-	//only allow updating chosen fields
+	// 2. Add Initials and Username to the allowed updates map
 	updates := map[string]interface{}{
-		"Email": userPatch.Email,
-		"Phone": userPatch.Phone,
-		"Name":  userPatch.Name,
+		"Email":    userPatch.Email,
+		"Phone":    userPatch.Phone,
+		"Name":     userPatch.Name,
+		"Initials": userPatch.Initials,
+		"Username": userPatch.Username,
 	}
 
+	// 3. Cleaner way to add Developer-only fields to the update map
 	if actingUser.Rights == models.RightsDeveloper {
-		updates = map[string]interface{}{
-			"Email":  userPatch.Email,
-			"Phone":  userPatch.Phone,
-			"Name":   userPatch.Name,
-			"Rights": userPatch.Rights,
-		}
+		updates["Rights"] = userPatch.Rights
 	}
 
 	olduser := user
@@ -275,6 +278,7 @@ func Patch(c *gin.Context) {
 		c.JSON(500, gin.H{"error": "Failed to update user"})
 		return
 	}
+
 	internal.LogUserPatch(actingUser, olduser, user)
 
 	c.JSON(200, user)

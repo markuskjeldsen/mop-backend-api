@@ -287,6 +287,7 @@ var root = models.User{
 	Phone:    "",
 }
 var user = models.User{
+	Initials: "mkk",
 	Name:     "Markus Kjeldsen",
 	Username: "mkk",
 	Password: "pass",
@@ -295,6 +296,7 @@ var user = models.User{
 	Rights:   models.RightsDeveloper,
 }
 var user1 = models.User{
+	Initials: "po",
 	Name:     "Patrick Olsen",
 	Username: "po_admin",
 	Password: "pass",
