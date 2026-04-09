@@ -142,7 +142,7 @@ func GenerateVisitsPlanExcel(visits []models.Visit) (*excelize.File, error) {
 			visit.AdvoproStatusText,                // status tekst
 			visit.AdvoproDeadlineDate,              // fristDato
 			visit.AdvoproKlient,                    // klient (SCB auto Blanco/Jyske Finans, Nordea Finans Danmark)
-			visit.User.Name,                        // konsulent
+			visit.User.Initials,                    // konsulent
 			visit.VisitDate,                        // besoegs dato
 			visit.VisitInterval,                    // Interval
 		}
