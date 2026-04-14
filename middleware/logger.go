@@ -1,54 +1,47 @@
 package middleware
 
 import (
-	"fmt"
-	"net/http"
+	"log/slog"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/markuskjeldsen/mop-backend-api/models"
 )
 
-var statusText = map[int]string{
-	200: "OK",
-	201: "Created",
-	204: "No Content",
-	400: "Bad Request",
-	401: "Unauthorized (Access Denied)",
-	403: "Forbidden",
-	404: "Not Found",
-	422: "Unprocessable Entity",
-	429: "Too Many Requests",
-	500: "Internal Server Error",
-	// Add more as needed
-}
-
 func RequestLogger() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		start := time.Now()
+		path := c.Request.URL.Path
+		query := c.Request.URL.RawQuery
+
 		c.Next()
 
 		status := c.Writer.Status()
-		desc := http.StatusText(status)
-		if desc == "" {
-			desc = "Unknown Status"
-		}
-
 		username := "-"
+
 		if v, ok := c.Get("user"); ok {
-			if u, ok := v.(models.User); ok && u.Name != "" {
+			if u, ok := v.(models.User); ok {
 				username = u.Username
 			}
 		}
 
-		fmt.Printf(
-			"%s | user=%s | %3d %s | %v | %s | %s %q\n",
-			time.Now().Format("2006/01/02-15:04:05"),
-			username,
-			status, desc,
-			time.Since(start),
-			c.ClientIP(),
-			c.Request.Method, c.Request.URL.Path,
-		)
+		end := time.Since(start)
+
+		attributes := []slog.Attr{
+			slog.Int("status", status),
+			slog.String("method", c.Request.Method),
+			slog.String("path", path),
+			slog.String("query", query),
+			slog.String("ip", c.ClientIP()),
+			slog.Duration("latency", end),
+			slog.String("user", username),
+		}
+
+		if len(c.Errors) > 0 {
+			attributes = append(attributes, slog.String("errors", c.Errors.String()))
+			slog.LogAttrs(c.Request.Context(), slog.LevelError, "request error", attributes...)
+		} else {
+			slog.LogAttrs(c.Request.Context(), slog.LevelInfo, "request", attributes...)
+		}
 	}
 }
