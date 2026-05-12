@@ -96,6 +96,14 @@ func CreateUser(c *gin.Context) {
 			})
 			return
 		}
+	default:
+		c.JSON(http.StatusBadRequest, nil)
+		return
+	}
+
+	if len(body.Password) < 8 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "password must be at least 8 characters"})
+		return
 	}
 
 	hash, err := bcrypt.GenerateFromPassword([]byte(body.Password), 14)
@@ -106,13 +114,27 @@ func CreateUser(c *gin.Context) {
 		})
 		return
 	}
-	switch body.Rights {
-	case "admin":
-		user.Rights = models.RightsAdmin
-	case "user":
-		user.Rights = models.RightsUser
+	// after parsing body, before creating
+	switch actingUser.Rights {
+	case models.RightsOfficeWorker:
+		// office can only create auditors (or office?)
+		if user.Rights != models.RightsAuditor {
+			c.AbortWithStatusJSON(http.StatusForbidden,
+				gin.H{"error": "office workers can only create auditors"})
+			return
+		}
+	case models.RightsAdmin:
+		// admin cannot create developers
+		if user.Rights == models.RightsDeveloper {
+			c.AbortWithStatusJSON(http.StatusForbidden,
+				gin.H{"error": "admin cannot create developer accounts"})
+			return
+		}
+	case models.RightsDeveloper:
+		// developer can create anything
 	default:
-		user.Rights = models.RightsUser
+		c.AbortWithStatus(http.StatusForbidden)
+		return
 	}
 
 	user.Initials = body.Initials

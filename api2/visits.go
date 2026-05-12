@@ -34,9 +34,9 @@ func GetVisits(c *gin.Context) {
 	}
 
 	switch user.Rights {
-	case models.RightsUser:
+	case models.RightsUser, models.RightsAuditor:
 		initializers.DB.Preload("Visits").Preload("Visits.Debitors").Find(&users, user.ID)
-	case models.RightsAdmin:
+	case models.RightsAdmin, models.RightsOfficeWorker:
 		initializers.DB.Preload("Visits").Preload("Visits.Debitors").Where("id != 1").Find(&users)
 	case models.RightsDeveloper:
 		initializers.DB.Preload("Visits").Preload("Visits.Debitors").Find(&users)

@@ -2,7 +2,6 @@ package middleware
 
 import (
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"time"
@@ -33,8 +32,8 @@ func RequireAuthUser(c *gin.Context) {
 		return []byte(os.Getenv("JWT_secret")), nil
 	}, jwt.WithValidMethods([]string{jwt.SigningMethodHS256.Alg()}))
 	if err != nil {
-		fmt.Println("the decode has failed")
-		log.Fatal(err)
+		c.AbortWithStatus(http.StatusUnauthorized)
+		return
 	}
 
 	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
@@ -42,6 +41,7 @@ func RequireAuthUser(c *gin.Context) {
 		if float64(time.Now().Unix()) > claims["exp"].(float64) {
 			fmt.Println("The token is too old")
 			c.AbortWithStatus(http.StatusUnauthorized)
+			return
 		}
 		//find user with token
 
@@ -56,11 +56,16 @@ func RequireAuthUser(c *gin.Context) {
 			attempt.FailureReason = "Token does not belong to any user"
 			initializers.DB.Create(&attempt)
 			c.AbortWithStatus(http.StatusUnauthorized)
+			return
 		}
 
 		c.Set("user", user)
 		c.Next()
+	} else {
+		c.AbortWithStatus(http.StatusUnauthorized)
+		return
 	}
+
 }
 
 func RequireAuthOfficeWorker(c *gin.Context) {
@@ -82,14 +87,15 @@ func RequireAuthOfficeWorker(c *gin.Context) {
 		return []byte(os.Getenv("JWT_secret")), nil
 	}, jwt.WithValidMethods([]string{jwt.SigningMethodHS256.Alg()}))
 	if err != nil {
-		fmt.Println("the decode has failed")
-		log.Fatal(err)
+		c.AbortWithStatus(http.StatusUnauthorized)
+		return
 	}
 
 	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
 		// check exp
 		if float64(time.Now().Unix()) > claims["exp"].(float64) {
 			c.AbortWithStatus(http.StatusUnauthorized)
+			return
 		}
 		//find user with token
 
@@ -103,6 +109,7 @@ func RequireAuthOfficeWorker(c *gin.Context) {
 			attempt.FailureReason = "Token does not belong to any user"
 			initializers.DB.Create(&attempt)
 			c.AbortWithStatus(http.StatusUnauthorized)
+			return
 		}
 
 		if user.Rights != models.RightsAdmin &&
@@ -113,7 +120,11 @@ func RequireAuthOfficeWorker(c *gin.Context) {
 		}
 		c.Set("user", user)
 		c.Next()
+	} else {
+		c.AbortWithStatus(http.StatusUnauthorized)
+		return
 	}
+
 }
 
 func RequireAuthAuditor(c *gin.Context) {
@@ -135,14 +146,15 @@ func RequireAuthAuditor(c *gin.Context) {
 		return []byte(os.Getenv("JWT_secret")), nil
 	}, jwt.WithValidMethods([]string{jwt.SigningMethodHS256.Alg()}))
 	if err != nil {
-		fmt.Println("the decode has failed")
-		log.Fatal(err)
+		c.AbortWithStatus(http.StatusUnauthorized)
+		return
 	}
 
 	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
 		// check exp
 		if float64(time.Now().Unix()) > claims["exp"].(float64) {
 			c.AbortWithStatus(http.StatusUnauthorized)
+			return
 		}
 		//find user with token
 
@@ -156,6 +168,7 @@ func RequireAuthAuditor(c *gin.Context) {
 			attempt.FailureReason = "Token does not belong to any user"
 			initializers.DB.Create(&attempt)
 			c.AbortWithStatus(http.StatusUnauthorized)
+			return
 		}
 
 		// if auditor is permitted then admin and dev are aswell but not office worker
@@ -167,7 +180,11 @@ func RequireAuthAuditor(c *gin.Context) {
 		}
 		c.Set("user", user)
 		c.Next()
+	} else {
+		c.AbortWithStatus(http.StatusUnauthorized)
+		return
 	}
+
 }
 
 func RequireAuthAdmin(c *gin.Context) {
@@ -189,14 +206,15 @@ func RequireAuthAdmin(c *gin.Context) {
 		return []byte(os.Getenv("JWT_secret")), nil
 	}, jwt.WithValidMethods([]string{jwt.SigningMethodHS256.Alg()}))
 	if err != nil {
-		fmt.Println("the decode has failed")
-		log.Fatal(err)
+		c.AbortWithStatus(http.StatusUnauthorized)
+		return
 	}
 
 	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
 		// check exp
 		if float64(time.Now().Unix()) > claims["exp"].(float64) {
 			c.AbortWithStatus(http.StatusUnauthorized)
+			return
 		}
 		//find user with token
 
@@ -210,6 +228,7 @@ func RequireAuthAdmin(c *gin.Context) {
 			attempt.FailureReason = "Token does not belong to any user"
 			initializers.DB.Create(&attempt)
 			c.AbortWithStatus(http.StatusUnauthorized)
+			return
 		}
 
 		if user.Rights != models.RightsAdmin &&
@@ -219,5 +238,9 @@ func RequireAuthAdmin(c *gin.Context) {
 		}
 		c.Set("user", user)
 		c.Next()
+	} else {
+		c.AbortWithStatus(http.StatusUnauthorized)
+		return
 	}
+
 }
