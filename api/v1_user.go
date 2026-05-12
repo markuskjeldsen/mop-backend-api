@@ -141,6 +141,7 @@ func CreateUser(c *gin.Context) {
 	user.Name = body.FullName
 	user.Username = body.Username
 	user.Email = body.Email
+	user.Rights = models.UserRights(body.Rights)
 
 	user.Password = string(hash)
 
