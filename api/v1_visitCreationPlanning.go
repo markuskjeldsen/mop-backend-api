@@ -26,17 +26,18 @@ func VisitCreation(c *gin.Context) {
 	}
 
 	type visitData struct {
-		Sagsnr int64 `json:"sagsnr"`
-
-		//ForlobInfo string  `json:"forlobInfo"`
-		Adresse string        `json:"adresse"`
-		Postnr  string        `json:"postnr"`
-		Bynavn  string        `json:"bynavn"`
-		Noter   *string       `json:"noter"`
-		Debtors []debitorData `json:"debtors"`
-
-		//
-		VisitType models.VisitType `json:"visit_type"`
+		Sagsnr     int64            `json:"sagsnr"`
+		Adresse    string           `json:"adresse"`
+		Postnr     string           `json:"postnr"`
+		Bynavn     string           `json:"bynavn"`
+		Noter      *string          `json:"noter"`
+		Debtors    []debitorData    `json:"debtors"`
+		VisitType  models.VisitType `json:"visit_type"`
+		KlientRef  string           `json:"klientRef"` // fixed
+		Klientnavn string           `json:"klientnavn"`
+		Klientnr   int64            `json:"klientnr"`
+		Sagvedr    string           `json:"sagvedr"`
+		FristDato  string           `json:"frist_dato"`
 	}
 	var visitsData []visitData
 
@@ -86,7 +87,7 @@ func VisitCreation(c *gin.Context) {
 			AdvoproStatus:       uint(extData.Status),
 			AdvoproStatusText:   extData.StatusText,
 			AdvoproDeadlineDate: deadlinestr, // possibly change to time.Time if needed in the future
-			AdvoproKlient:       extData.KlientNavn,
+			AdvoproKlient:       visitData.KlientRef,
 		}
 		result := initializers.DB.Create(&visit)
 		if result.Error != nil {
