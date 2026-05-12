@@ -278,3 +278,23 @@ func byteToFloat(b []byte) float64 {
 	}
 	return f
 }
+
+func UpdateBehandlingskodeText(additionalText string) bool {
+	// UPDATE KlientBehandlingSag
+	//SET Tekst = Tekst + ' Modtaget konsulentrapport pr. 26.03.2026:
+	//Socialt boligbyggeri af nyere dato. Dør telefon med postkasser udenfor. Ingen svarer ved dørtelefon. Begge køretøjer er på adressen.
+	//Andet navn på dørtelefon og postkasse. Nabo bekræfter, at ham der kører taxaen, bor på adressen, men kender ikke navnet.
+	//Køretøjet er mere værd end restgælden, men sagen må sendes frem, da debitor ikke er til at komme i kontakt med'
+	//WHERE BehandlingId = 183741
+
+	text := `you can update the text in the behandlingskode
+			but remember there can only be 270 chars in there. 
+			and it probably already says 'Besøg kl. 13:00 - 16:00' `
+	// 270 - 23 = 257 chars
+	// we will use a note because it allows for more text
+	// i think its unlimited, but should be resonable.
+	// propably the comments/ short review of the visit will be there
+
+	fmt.Println(text)
+	return true
+}

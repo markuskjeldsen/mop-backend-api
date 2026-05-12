@@ -101,6 +101,34 @@ func start_server() {
 
 		apiv1.GET("/visit/pdf", middleware.RequireAuthAdmin, api.VisitPDF)
 		apiv1.POST("visit/reviewed", middleware.RequireAuthAdmin, api.ReviewedVisit)
+
+		// penneo integration
+
+		// following the flow from postman
+
+		// a post endpoint exists which tells backend to start process (init when konsulent presses a start key)
+		// get access token
+		// ... wait for email confirm by frontend
+		// when confirmed send Casefile (templated file written by DAI)
+		//		save  jobs.uuid: 7a8f9381-9599-4647-99dc-f4a0a0... string and jobs.payloadHash = 106bf6a214dac95000840a7eb792... string
+		//
+		//  poll the job status with following body, keep polling until json.jobStatus === 'completed'
+		//		{
+		//  		"uuid": "{{jobUuid}}",
+		//  		"payloadHash": "{{payloadHash}}"
+		//		}
+		// then get the data casefileId
+		// casefileId = json.result.data.caseFile.id
+		//
+		// and then check how far along the debitor is
+		// in signing the document by checking {{baseUrl}}/api/v1/casefiles/{{casefileId}}
+		// perhaps get a webhook going. max 5 tho
+		//     "status": 1, means not signed yet, dont know what others mean but 5 means signed.
+		// get the documents.documentID : string 5VO39-9IV5G-I1ER9-...
+
+		// when signed get {{baseUrl}}/api/v3/documents/{{documentId}}/content for the signed pdf,
+		// and send it to the advopro integration for document upload
+
 	}
 
 	// apiv2 is for the PWA
