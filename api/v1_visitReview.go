@@ -33,7 +33,21 @@ func VisitPDF(c *gin.Context) {
 		return
 	}
 
-	pdfBytes := internal.GeneratePDFVisit(uint(visitID))
+	pdfBytes, err := internal.GeneratePDFVisit(uint(visitID))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+			"id":    visitID,
+		})
+	}
+	ok := internal.AddNoteToAdvopro(visitcheck)
+	if !ok {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Advopro integration went wrong",
+			"id":    visitcheck.Sagsnr,
+		})
+
+	}
 
 	var visit models.Visit
 	initializers.DB.First(&visit, visitID)

@@ -529,7 +529,7 @@ func pdfGenerate(pdf *fpdf.Fpdf, v models.Visit) {
 
 }
 
-func GeneratePDFVisit(visitID uint) []byte {
+func GeneratePDFVisit(visitID uint) ([]byte, error) {
 
 	var visit models.Visit
 	initializers.DB.Preload("Type").Preload("Debitors").Preload("VisitResponse").Preload("VisitResponse.Images").Preload("User").First(&visit, visitID)
@@ -551,13 +551,15 @@ func GeneratePDFVisit(visitID uint) []byte {
 	var buf bytes.Buffer
 	err := pdfBuf.Output(&buf)
 	if err != nil {
-		log.Fatal(err)
+		log.Printf("error outputting PDF to buffer: %v", err)
+		return nil, err
 	}
 
 	err = pdfFile.OutputFileAndClose(filename)
 	if err != nil {
-		log.Fatal(err)
+		log.Printf("error outputting PDF to file: %v", err)
+		return nil, err
 	}
 
-	return buf.Bytes()
+	return buf.Bytes(), nil // data , ok
 }
