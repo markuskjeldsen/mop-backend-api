@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -51,8 +52,14 @@ func AvailableVisitCreation(c *gin.Context) {
 		statuskode := result["status"].(int64)
 		fristDato := result["Fristdato"].(time.Time).Format("2006-01-02")
 
-		// Create combined key: address + case number
-		addressCaseKey := fmt.Sprintf("%s%s%s_%d", adresse, postnr, bynavn, sagsnr)
+		// Normalize address for dedup: lowercase, strip locality suffix after comma
+		normalized := strings.ToLower(adresse)
+		if idx := strings.Index(normalized, ","); idx != -1 {
+			normalized = strings.TrimSpace(normalized[:idx])
+		}
+
+		// Create combined key: normalized address + postal code + case number
+		addressCaseKey := fmt.Sprintf("%s%s_%d", normalized, postnr, sagsnr)
 
 		if _, ok := processedVisits[addressCaseKey]; !ok {
 			// Create new visit entry
