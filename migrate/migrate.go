@@ -102,6 +102,7 @@ func resetPassword(id uint) {
 		fmt.Println("This is the ID of the root, and should not be changed. Try another user")
 		return
 	}
+
 	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte("pass"), 14)
 	var user models.User
 	user.ID = uint(id)
@@ -120,6 +121,7 @@ func resetPassword(id uint) {
 	}
 
 	initializers.DB.Model(&user).Update("password", string(hashedPassword))
+	fmt.Println("the new password is 'pass'")
 }
 
 func fullreset() {
