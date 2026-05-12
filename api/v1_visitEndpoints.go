@@ -52,30 +52,41 @@ func AvailableVisitCreation(c *gin.Context) {
 		statuskode := result["status"].(int64)
 		fristDato := result["Fristdato"].(time.Time).Format("2006-01-02")
 
-		// Normalize address for dedup: lowercase, strip locality suffix after comma
 		normalized := strings.ToLower(adresse)
 		if idx := strings.Index(normalized, ","); idx != -1 {
 			normalized = strings.TrimSpace(normalized[:idx])
 		}
 
-		// Create combined key: normalized address + postal code + case number
 		addressCaseKey := fmt.Sprintf("%s%s_%d", normalized, postnr, sagsnr)
 
 		if _, ok := processedVisits[addressCaseKey]; !ok {
-			// Create new visit entry
 			processedVisits[addressCaseKey] = map[string]interface{}{
 				"index":      index,
 				"sagsnr":     sagsnr,
-				"adresse":    adresse,
+				"adresse":    adresse, // Set initial address
 				"postnr":     postnr,
 				"bynavn":     bynavn,
 				"status":     statuskode,
 				"frist_dato": fristDato,
 				"debtors":    []map[string]interface{}{},
 			}
+		} else {
+			existing := processedVisits[addressCaseKey]
+			// Always update to longest address
+			if len(adresse) > len(existing["adresse"].(string)) {
+				existing["adresse"] = adresse
+				processedVisits[addressCaseKey] = existing // Write back explicitly
+			}
 		}
 
-		// Add debtor to this visit
+		// After the if/else block, always check and update address
+		existing := processedVisits[addressCaseKey]
+		if len(adresse) > len(existing["adresse"].(string)) {
+			existing["adresse"] = adresse
+			processedVisits[addressCaseKey] = existing
+		}
+
+		// Then add debtor
 		processedVisits[addressCaseKey]["debtors"] = append(
 			processedVisits[addressCaseKey]["debtors"].([]map[string]interface{}),
 			map[string]interface{}{
