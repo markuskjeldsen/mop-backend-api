@@ -51,6 +51,9 @@ func AvailableVisitCreation(c *gin.Context) {
 		bynavn := result["bynavn"].(string)
 		statuskode := result["status"].(int64)
 		fristDato := result["Fristdato"].(time.Time).Format("2006-01-02")
+		klientnr := result["klientnr"].(int64)
+		klientnavn := result["klientnavn"].(string)
+		sagVedr := result["sagVedr"].(string)
 
 		normalized := strings.ToLower(adresse)
 		if idx := strings.Index(normalized, ","); idx != -1 {
@@ -69,6 +72,9 @@ func AvailableVisitCreation(c *gin.Context) {
 				"status":     statuskode,
 				"frist_dato": fristDato,
 				"debtors":    []map[string]interface{}{},
+				"klientnr":   klientnr,
+				"klientnavn": klientnavn,
+				"sagvedr":    sagVedr,
 			}
 		} else {
 			existing := processedVisits[addressCaseKey]

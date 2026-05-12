@@ -14,13 +14,18 @@ SELECT
 	d.Postnr as postnr,
 	d.Bynavn as bynavn,
 	d.Noter as noter,
-	d.DebitorId as debitorId
+	d.DebitorId as debitorId,
+	s.Klientnr as klientnr,
+	s.KlientNavn as klientnavn,
+	s.SagVedr as sagVedr
 FROM
 	vwInkassoForlob f
 JOIN
 	vwInkassoForlobDebitor fd ON fd.ForlobId = f.ForlobId
 JOIN
 	vwInkassoDebitor d ON d.DebitorId = fd.DebitorId
+JOIN
+	vwInkassoSag s ON s.Sagsnr = f.Sagsnr
 WHERE
 	f.Status in (4,5,7,70,71,72,73)
 `
