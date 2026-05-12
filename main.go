@@ -57,15 +57,15 @@ func start_server() {
 		apiv1.GET("/health", api.Hello) // just returns "hello from the api"  in JSON
 		apiv1.GET("/verifytoken", middleware.RequireAuthUser, api.Verifytoken)
 
-		apiv1.GET("/users", middleware.RequireAuthAdmin, api.GetUsers)          // gets all the users
+		apiv1.GET("/users", middleware.RequireAuthOfficeWorker, api.GetUsers)   // gets all the users
 		apiv1.GET("/user", middleware.RequireAuthUser, api.GetUser)             // gets data about acting user and their visits
 		apiv1.GET("/users/:id", middleware.RequireAuthUser, api.GetUserByParam) // get data about specific user
 		apiv1.PATCH("/users/:id", middleware.RequireAuthUser, api.Patch)
 		apiv1.PATCH("/users/:id/password", middleware.RequireAuthUser, api.ChangePassword)
 
-		apiv1.DELETE("/users/:id", middleware.RequireAuthAdmin, api.DeleteUser)
+		apiv1.DELETE("/users/:id", middleware.RequireAuthOfficeWorker, api.DeleteUser)
 
-		apiv1.POST("/register", middleware.RequireAuthAdmin, api.CreateUser)
+		apiv1.POST("/register", middleware.RequireAuthOfficeWorker, api.CreateUser)
 		apiv1.POST("/login", middleware.LoginAttemptLog, api.Login)
 		apiv1.POST("/logout", middleware.RequireAuthUser, api.Logout)
 
@@ -75,32 +75,32 @@ func start_server() {
 
 		apiv1.GET("/visits", middleware.RequireAuthUser, api.GetVisits)
 		apiv1.GET("/visits/types", api.GetVisitTypes)
-		apiv1.GET("/visits/byId", middleware.RequireAuthUser, api.GetVisitsById)          //query parameter
-		apiv1.GET("/visits/byStatus", middleware.RequireAuthAdmin, api.GetVisitsByStatus) // query parameter
-		apiv1.GET("/visits/debt", middleware.RequireAuthUser, api.DebtInformation)        // query parameter
-		apiv1.DELETE("/visit/byId", middleware.RequireAuthAdmin, api.DeleteVisit)
+		apiv1.GET("/visits/byId", middleware.RequireAuthUser, api.GetVisitsById)                 //query parameter
+		apiv1.GET("/visits/byStatus", middleware.RequireAuthOfficeWorker, api.GetVisitsByStatus) // query parameter
+		apiv1.GET("/visits/debt", middleware.RequireAuthUser, api.DebtInformation)               // query parameter
+		apiv1.DELETE("/visit/byId", middleware.RequireAuthOfficeWorker, api.DeleteVisit)
 
-		apiv1.GET("/visits/AvailableVisit", middleware.RequireAuthAdmin, api.AvailableVisitCreation) // gets visits that can be created
-		apiv1.POST("/visits/create", middleware.RequireAuthAdmin, api.VisitCreation)                 // creates thoses visits
-		apiv1.GET("/visits/create", middleware.RequireAuthAdmin, api.CreatedVisits)                  // retrives the created visits that have not yet been planned
+		apiv1.GET("/visits/AvailableVisit", middleware.RequireAuthOfficeWorker, api.AvailableVisitCreation) // gets visits that can be created
+		apiv1.POST("/visits/create", middleware.RequireAuthOfficeWorker, api.VisitCreation)                 // creates thoses visits
+		apiv1.GET("/visits/create", middleware.RequireAuthOfficeWorker, api.CreatedVisits)                  // retrives the created visits that have not yet been planned
 
-		apiv1.PATCH("/visits/:id/group", middleware.RequireAuthAdmin, api.ChangeGroupId)                  // move a singe visit to a new groupId
-		apiv1.PATCH("/visits/group/:groupId/date", middleware.RequireAuthAdmin, api.ChangeGroupDate)      // change the date of all visits with a groupID
-		apiv1.GET("/visits/group/:groupId", middleware.RequireAuthAdmin, api.GetInGroup)                  // get all the visits in a group
-		apiv1.DELETE("/visits/group/:groupId", middleware.RequireAuthAdmin, api.RemoveFromGroup)          // removes the visits from a group. sets GroupID = 0 for all visits in that group
-		apiv1.PATCH("/visits/group/:groupId/konsulent", middleware.RequireAuthAdmin, api.ChangeKonsulent) // Change the konsulent/user, so a different one is going to perform the visits
-		apiv1.GET("/visits/group/:groupId/planned", middleware.RequireAuthAdmin, api.PlannedVisitsExcel)  // gets the excel sheet for the inkasso afdeling enabeling easier workflow
+		apiv1.PATCH("/visits/:id/group", middleware.RequireAuthOfficeWorker, api.ChangeGroupId)                  // move a singe visit to a new groupId
+		apiv1.PATCH("/visits/group/:groupId/date", middleware.RequireAuthOfficeWorker, api.ChangeGroupDate)      // change the date of all visits with a groupID
+		apiv1.GET("/visits/group/:groupId", middleware.RequireAuthOfficeWorker, api.GetInGroup)                  // get all the visits in a group
+		apiv1.DELETE("/visits/group/:groupId", middleware.RequireAuthOfficeWorker, api.RemoveFromGroup)          // removes the visits from a group. sets GroupID = 0 for all visits in that group
+		apiv1.PATCH("/visits/group/:groupId/konsulent", middleware.RequireAuthOfficeWorker, api.ChangeKonsulent) // Change the konsulent/user, so a different one is going to perform the visits
+		apiv1.GET("/visits/group/:groupId/planned", middleware.RequireAuthOfficeWorker, api.PlannedVisitsExcel)  // gets the excel sheet for the inkasso afdeling enabeling easier workflow
 
-		apiv1.POST("/visits/visitfile", middleware.RequireAuthAdmin, api.VisitFile)     // generates a visit excel file so the visits can be planned without making another visit
-		apiv1.POST("/visits/plan", middleware.RequireAuthAdmin, api.PlanVisit)          // here visits are planned
-		apiv1.GET("/visits/planned", middleware.RequireAuthAdmin, api.PlannedVisits)    // here are the planned visits
-		apiv1.PATCH("/visits/planned/:id", middleware.RequireAuthAdmin, api.PatchVisit) // here are the planned visits
+		apiv1.POST("/visits/visitfile", middleware.RequireAuthOfficeWorker, api.VisitFile)     // generates a visit excel file so the visits can be planned without making another visit
+		apiv1.POST("/visits/plan", middleware.RequireAuthOfficeWorker, api.PlanVisit)          // here visits are planned
+		apiv1.GET("/visits/planned", middleware.RequireAuthOfficeWorker, api.PlannedVisits)    // here are the planned visits
+		apiv1.PATCH("/visits/planned/:id", middleware.RequireAuthOfficeWorker, api.PatchVisit) // here are the planned visits
 
 		//send the letters
-		apiv1.POST("/visit/letterSent", middleware.RequireAuthAdmin, api.VisitLetterSent) // remember GetQuery("id")
+		apiv1.POST("/visit/letterSent", middleware.RequireAuthOfficeWorker, api.VisitLetterSent) // remember GetQuery("id")
 
-		apiv1.GET("/visit/pdf", middleware.RequireAuthAdmin, api.VisitPDF)
-		apiv1.POST("visit/reviewed", middleware.RequireAuthAdmin, api.ReviewedVisit)
+		apiv1.GET("/visit/pdf", middleware.RequireAuthOfficeWorker, api.VisitPDF)
+		apiv1.POST("visit/reviewed", middleware.RequireAuthOfficeWorker, api.ReviewedVisit)
 
 		// penneo integration
 
@@ -137,15 +137,15 @@ func start_server() {
 		apiv2.GET("/health", api.Hello) // Adding a route to the group
 		apiv2.GET("/verifytoken", middleware.RequireAuthUser, api.Verifytoken)
 
-		apiv2.GET("/users", middleware.RequireAuthAdmin, api.GetUsers)          // Adding a route to the group
+		apiv2.GET("/users", middleware.RequireAuthOfficeWorker, api.GetUsers)   // Adding a route to the group
 		apiv2.GET("/user", middleware.RequireAuthUser, api.GetUser)             // Adding a route to the group
 		apiv2.GET("/users/:id", middleware.RequireAuthUser, api.GetUserByParam) // Adding a route to the group
 		apiv2.PATCH("/users/:id", middleware.RequireAuthUser, api.Patch)
 		apiv2.PATCH("/users/:id/password", middleware.RequireAuthUser, api.ChangePassword)
 
-		apiv2.DELETE("/users/:id", middleware.RequireAuthAdmin, api.DeleteUser)
+		apiv2.DELETE("/users/:id", middleware.RequireAuthOfficeWorker, api.DeleteUser)
 
-		apiv2.POST("/register", middleware.RequireAuthAdmin, api.CreateUser)
+		apiv2.POST("/register", middleware.RequireAuthOfficeWorker, api.CreateUser)
 		apiv2.POST("/login", middleware.LoginAttemptLog, api.Login)
 		apiv2.POST("/logout", middleware.RequireAuthUser, api.Logout)
 
@@ -156,25 +156,25 @@ func start_server() {
 		apiv2.GET("/visits", middleware.RequireAuthUser, api2.GetVisits)
 
 		apiv2.GET("/visits/types", api.GetVisitTypes)
-		apiv2.GET("/visits/byId", middleware.RequireAuthUser, api.GetVisitsById)          //query parameter
-		apiv2.GET("/visits/byStatus", middleware.RequireAuthAdmin, api.GetVisitsByStatus) // query parameter
-		apiv2.GET("/visits/debt", middleware.RequireAuthUser, api.DebtInformation)        // query parameter
-		apiv2.DELETE("/visit/byId", middleware.RequireAuthAdmin, api.DeleteVisit)
+		apiv2.GET("/visits/byId", middleware.RequireAuthUser, api.GetVisitsById)                 //query parameter
+		apiv2.GET("/visits/byStatus", middleware.RequireAuthOfficeWorker, api.GetVisitsByStatus) // query parameter
+		apiv2.GET("/visits/debt", middleware.RequireAuthUser, api.DebtInformation)               // query parameter
+		apiv2.DELETE("/visit/byId", middleware.RequireAuthOfficeWorker, api.DeleteVisit)
 
-		apiv2.GET("/visits/AvailableVisit", middleware.RequireAuthAdmin, api.AvailableVisitCreation) // gets visits that can be created
-		apiv2.POST("/visits/create", middleware.RequireAuthAdmin, api.VisitCreation)                 // creates thoses visits
-		apiv2.GET("/visits/create", middleware.RequireAuthAdmin, api.CreatedVisits)                  // retrives the created visits that have not yet been planned
+		apiv2.GET("/visits/AvailableVisit", middleware.RequireAuthOfficeWorker, api.AvailableVisitCreation) // gets visits that can be created
+		apiv2.POST("/visits/create", middleware.RequireAuthOfficeWorker, api.VisitCreation)                 // creates thoses visits
+		apiv2.GET("/visits/create", middleware.RequireAuthOfficeWorker, api.CreatedVisits)                  // retrives the created visits that have not yet been planned
 
-		apiv2.POST("/visits/visitfile", middleware.RequireAuthAdmin, api.VisitFile)     // generates a visit excel file so the visits can be planned without making another visit
-		apiv2.POST("/visits/plan", middleware.RequireAuthAdmin, api.PlanVisit)          // here visits are planned
-		apiv2.GET("/visits/planned", middleware.RequireAuthAdmin, api.PlannedVisits)    // here are the planned visits
-		apiv2.PATCH("/visits/planned/:id", middleware.RequireAuthAdmin, api.PatchVisit) // here are the planned visits
+		apiv2.POST("/visits/visitfile", middleware.RequireAuthOfficeWorker, api.VisitFile)     // generates a visit excel file so the visits can be planned without making another visit
+		apiv2.POST("/visits/plan", middleware.RequireAuthOfficeWorker, api.PlanVisit)          // here visits are planned
+		apiv2.GET("/visits/planned", middleware.RequireAuthOfficeWorker, api.PlannedVisits)    // here are the planned visits
+		apiv2.PATCH("/visits/planned/:id", middleware.RequireAuthOfficeWorker, api.PatchVisit) // here are the planned visits
 
 		//send the letters
-		apiv2.POST("/visit/letterSent", middleware.RequireAuthAdmin, api.VisitLetterSent) // remember GetQuery("id")
+		apiv2.POST("/visit/letterSent", middleware.RequireAuthOfficeWorker, api.VisitLetterSent) // remember GetQuery("id")
 
-		apiv2.GET("/visit/pdf", middleware.RequireAuthAdmin, api.VisitPDF)
-		apiv2.POST("visit/reviewed", middleware.RequireAuthAdmin, api.ReviewedVisit)
+		apiv2.GET("/visit/pdf", middleware.RequireAuthOfficeWorker, api.VisitPDF)
+		apiv2.POST("visit/reviewed", middleware.RequireAuthOfficeWorker, api.ReviewedVisit)
 	}
 
 	// the desktop frontend

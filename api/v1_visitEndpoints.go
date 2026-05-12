@@ -102,9 +102,13 @@ func GetVisits(c *gin.Context) {
 
 	switch user.Rights {
 	case models.RightsUser:
+	case models.RightsAuditor:
 		initializers.DB.Preload("Visits").Preload("Visits.Debitors").Find(&users, user.ID)
+
+	case models.RightsOfficeWorker:
 	case models.RightsAdmin:
 		initializers.DB.Preload("Visits").Preload("Visits.Debitors").Where("id != 1").Find(&users)
+
 	case models.RightsDeveloper:
 		initializers.DB.Preload("Visits").Preload("Visits.Debitors").Find(&users)
 	}
@@ -164,9 +168,13 @@ func GetVisitsById(c *gin.Context) {
 
 	switch user.Rights {
 	case models.RightsUser:
+	case models.RightsAuditor:
 		query = query.Where("user_id = ?", user.ID)
+	case models.RightsOfficeWorker:
 	case models.RightsAdmin:
 		query = query.Where("user_id != 1")
+	case models.RightsDeveloper:
+		break
 	}
 
 	if err := query.First(&visit, id).Error; err != nil {
@@ -191,7 +199,10 @@ func GetVisitsByStatus(c *gin.Context) {
 		return
 	}
 
-	if user.Rights == models.RightsUser {
+	switch user.Rights {
+	case models.RightsNone:
+	case models.RightsAuditor:
+	case models.RightsUser:
 		c.JSON(http.StatusForbidden, gin.H{})
 		return
 	}
@@ -225,7 +236,7 @@ func Visit_responses(c *gin.Context) {
 	}
 
 	var users []models.User
-	if user.Rights == models.RightsUser {
+	if user.Rights == models.RightsUser || user.Rights == models.RightsAuditor {
 		initializers.DB.
 			Preload("Visits").
 			Preload("Visits.Type").
@@ -234,13 +245,14 @@ func Visit_responses(c *gin.Context) {
 			Preload("Visits.Status").
 			First(&users, user.ID)
 	}
-	if user.Rights == models.RightsAdmin {
+	if user.Rights == models.RightsAdmin || user.Rights == models.RightsOfficeWorker {
 		initializers.DB.
 			Preload("Visits").
 			Preload("Visits.Type").
 			Preload("Visits.Debitors").
 			Preload("Visits.VisitResponse").
 			Preload("Visits.Status").
+			Where("rights != ?", models.RightsOfficeWorker).
 			Where("id != 1").Find(&users)
 	}
 	if user.Rights == models.RightsDeveloper {

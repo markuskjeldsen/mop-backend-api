@@ -161,7 +161,7 @@ func PlanVisit(c *gin.Context) {
 		query := initializers.DB.Model(&models.Visit{}).Where("id = ? AND sagsnr = ?", visitIDUint, sagsnrUint)
 
 		// If not developer, only allow updating visits that are still in 'New' status (status_id = 1)
-		if user.Rights != models.RightsDeveloper {
+		if user.Rights != models.RightsDeveloper { // this restricts the normal user to only the normal flow. but dev can move any case to status 2
 			query = query.Where("status_id = 1")
 		}
 

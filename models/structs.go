@@ -28,10 +28,12 @@ const (
 type UserRights string
 
 const (
-	RightsAdmin     UserRights = "admin"
-	RightsDeveloper UserRights = "developer"
-	RightsUser      UserRights = "user"
-	RightsNone      UserRights = "none"
+	RightsAdmin        UserRights = "admin"
+	RightsDeveloper    UserRights = "developer"
+	RightsOfficeWorker UserRights = "office"
+	RightsAuditor      UserRights = "auditor"
+	RightsUser         UserRights = "user"
+	RightsNone         UserRights = "none"
 )
 
 type CivilStatus string
