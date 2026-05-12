@@ -3,6 +3,7 @@ package internal
 import (
 	"database/sql"
 	"fmt"
+	"log"
 	"os"
 	"strconv"
 	"strings"
@@ -11,6 +12,39 @@ import (
 	_ "github.com/denisenkom/go-mssqldb"
 	"github.com/markuskjeldsen/mop-backend-api/models"
 )
+
+type Historik struct {
+	HistorikId        int
+	Sagsnr            int
+	Tidspunkt         *time.Time
+	Notattype         int
+	Tekst             string
+	Noter             *string
+	Medarbejdernr     int
+	SkjulEksternt     bool
+	JobId             int
+	Oprettet          time.Time
+	OprettetAf        string
+	Slettet           *time.Time
+	SlettetAf         string
+	HistorikType      int
+	HistorikRefId     int
+	Oprindelse        int
+	OprindelseId      int
+	DebitorAccepteret bool
+}
+
+type InsertHistorikParams struct {
+	Sagsnr        int
+	Tekst         string
+	Noter         string
+	Medarbejdernr int
+	OprettetAf    string
+	Notattype     int        // default: 0
+	SkjulEksternt bool       // default: false
+	Tidspunkt     *time.Time // optional, defaults to now
+	DryRun        bool       // default: true
+}
 
 type AdvoProCaseData struct {
 	Sagsnr       uint
@@ -51,6 +85,27 @@ func toTime(v interface{}) time.Time {
 	default:
 		return time.Time{}
 	}
+}
+
+func GetConnection(server, database string) (*sql.DB, error) {
+	user := os.Getenv("MSSQL_USER")
+	pass := os.Getenv("MSSQL_PASS")
+
+	connStr := fmt.Sprintf(
+		"server=%s;user id=%s;password=%s;database=%s;encrypt=true;TrustServerCertificate=true;port=1433;connection timeout=5",
+		server, user, pass, database,
+	)
+
+	db, err := sql.Open("sqlserver", connStr)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open connection to %s/%s: %w", server, database, err)
+	}
+
+	if err := db.Ping(); err != nil {
+		return nil, fmt.Errorf("failed to ping %s/%s: %w", server, database, err)
+	}
+
+	return db, nil
 }
 
 func ExecuteQuery(server, database, query string, params ...interface{}) ([]map[string]interface{}, error) {
@@ -298,3 +353,186 @@ func UpdateBehandlingskodeText(additionalText string) bool {
 	fmt.Println(text)
 	return true
 }
+
+// ─── Insert Historik ──────────────────────────────────────────────────────────
+
+// InsertHistorik inserts a new historik/note row into KlientHistorik.
+// Returns the new HistorikId, or an error on failure.
+// If DryRun is true, the transaction is rolled back and the would-be ID is returned.
+func InsertHistorik(db *sql.DB, p InsertHistorikParams) (int, error) {
+	now := time.Now()
+
+	tidspunkt := now
+	if p.Tidspunkt != nil {
+		tidspunkt = *p.Tidspunkt
+	}
+
+	skjulEksterntInt := 0
+	if p.SkjulEksternt {
+		skjulEksterntInt = 1
+	}
+
+	query := `
+        INSERT INTO KlientHistorik (
+            Sagsnr, Tidspunkt, Notattype, Tekst, Noter,
+            Medarbejdernr, SkjulEksternt, JobId, Oprettet, OprettetAf,
+            SlettetAf, HistorikType, HistorikRefId, Oprindelse, OprindelseId, DebitorAccepteret
+        )
+        OUTPUT INSERTED.HistorikId
+        VALUES (@sagsnr, @tidspunkt, @notattype, @tekst, @noter,
+            @medarbejdernr, @skjulEksternt, 0, @oprettet, @oprettetAf,
+            '', 0, 0, 0, 0, 0)
+    `
+
+	dryRunPrefix := ""
+	if p.DryRun {
+		dryRunPrefix = "[DRY RUN] "
+	}
+	log.Printf("%sInserting historik for Sagsnr %d", dryRunPrefix, p.Sagsnr)
+	log.Printf("%sTekst: %s", dryRunPrefix, p.Tekst)
+
+	// Begin transaction for manual control
+	tx, err := db.Begin()
+	if err != nil {
+		return 0, fmt.Errorf("failed to begin transaction: %w", err)
+	}
+
+	// Ensure rollback on panic or early return
+	defer func() {
+		if tx != nil {
+			_ = tx.Rollback()
+		}
+	}()
+
+	var newID int
+	err = tx.QueryRow(
+		query,
+		sql.Named("sagsnr", p.Sagsnr),
+		sql.Named("tidspunkt", tidspunkt),
+		sql.Named("notattype", p.Notattype),
+		sql.Named("tekst", p.Tekst),
+		sql.Named("noter", p.Noter),
+		sql.Named("medarbejdernr", p.Medarbejdernr),
+		sql.Named("skjulEksternt", skjulEksterntInt),
+		sql.Named("oprettet", now),
+		sql.Named("oprettetAf", p.OprettetAf),
+	).Scan(&newID)
+	if err != nil {
+		_ = tx.Rollback()
+		tx = nil
+		return 0, fmt.Errorf("failed to insert historik: %w", err)
+	}
+
+	if p.DryRun {
+		log.Printf("[DRY RUN] Would have inserted HistorikId %d. Rolling back.", newID)
+		_ = tx.Rollback()
+		tx = nil
+		return newID, nil
+	}
+
+	if err := tx.Commit(); err != nil {
+		tx = nil
+		return 0, fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
+	tx = nil // Prevent deferred rollback after successful commit
+	log.Printf("Inserted HistorikId %d. Committed.", newID)
+
+	return newID, nil
+}
+
+/*
+def insert_historik(
+    conn: pyodbc.Connection,
+    sagsnr: int,
+    tekst: str,
+    noter: str,
+    medarbejdernr: int,
+    oprettet_af: str,
+    notattype: int = 0,
+    skjul_eksternt: bool = False,
+    tidspunkt: Optional[datetime] = None,
+    dry_run: bool = True
+) -> Optional[int]:
+    """
+    Insert a new historik/note row.
+    Returns the new HistorikId, or None on failure.
+    """
+    try:
+        now = datetime.now()
+        tidspunkt = tidspunkt or now
+
+        sql = """
+            INSERT INTO KlientHistorik (
+                Sagsnr, Tidspunkt, Notattype, Tekst, Noter,
+                Medarbejdernr, SkjulEksternt, JobId, Oprettet, OprettetAf,
+                SlettetAf, HistorikType, HistorikRefId, Oprindelse, OprindelseId, DebitorAccepteret
+            )
+            OUTPUT INSERTED.HistorikId
+            VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, ?, '', 0, 0, 0, 0, 0)
+        """
+        values = (sagsnr, tidspunkt, notattype, tekst, noter,
+                  medarbejdernr, int(skjul_eksternt), now, oprettet_af)
+
+        logger.info(f"{'[DRY RUN] ' if dry_run else ''}Inserting historik for Sagsnr {sagsnr}")
+        logger.info(f"{'[DRY RUN] ' if dry_run else ''}Tekst: {tekst}")
+
+        cursor = conn.cursor()
+        cursor.execute(sql, values)
+        new_id = cursor.fetchone()[0]
+
+        if dry_run:
+            logger.info(f"[DRY RUN] Would have inserted HistorikId {new_id}. Rolling back.")
+            conn.rollback()
+            return new_id  # Return what would have been the ID
+        else:
+            conn.commit()
+            logger.info(f"Inserted HistorikId {new_id}. Committed.")
+            return new_id
+
+    except Exception as e:
+        logger.error(f"Error during insert: {e}")
+        conn.rollback()
+        return None
+
+
+		# ─── Connection ───────────────────────────────────────────────────────────────
+
+def get_connection(server: str, database: str, trusted_connection: bool = True) -> pyodbc.Connection:
+    conn_str = (
+        f"DRIVER={{ODBC Driver 17 for SQL Server}};"
+        f"SERVER={server};"
+        f"DATABASE={database};"
+        f"Trusted_Connection={'yes' if trusted_connection else 'no'};"
+    )
+    conn = pyodbc.connect(conn_str)
+    conn.autocommit = False  # Always manual transaction control
+    return conn
+
+
+# ─── Data Classes ─────────────────────────────────────────────────────────────
+
+@dataclass
+class Historik:
+    HistorikId: int
+    Sagsnr: int
+    Tidspunkt: Optional[datetime]
+    Notattype: int
+    Tekst: str
+    Noter: Optional[str]
+    Medarbejdernr: int
+    SkjulEksternt: bool
+    JobId: int
+    Oprettet: datetime
+    OprettetAf: str
+    Slettet: Optional[datetime]
+    SlettetAf: str
+    HistorikType: int
+    HistorikRefId: int
+    Oprindelse: int
+    OprindelseId: int
+    DebitorAccepteret: bool
+
+
+
+*/
