@@ -20,7 +20,7 @@ import (
 type Location struct {
 	Lat    float64 `json:"lat"`
 	Lon    float64 `json:"lon"`
-	Radius int     `json:"radius,omitempty"` // Add this!
+	Radius int     `json:"radius,omitempty"` // important!
 }
 
 type Waypoint struct {
