@@ -491,6 +491,7 @@ func OptimizeGroup(c *gin.Context) {
 	var visits []models.Visit
 	if err := initializers.DB.Where("group_id = ?", groupId).
 		Order("stop_nr ASC").Find(&visits).Error; err != nil {
+		logger.Errorf("OptimizeGroup: %s", err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -506,6 +507,7 @@ func OptimizeGroup(c *gin.Context) {
 	if input.FreeEndpoints {
 		orderedVisits, err = optimizeFree(visits, segs, costing, mode)
 		if err != nil {
+			logger.Errorf("OptimizeGroup: %s", err.Error())
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
@@ -582,6 +584,7 @@ func OptimizeGroup(c *gin.Context) {
 	}
 	geometry, distance, travelTime, overrun, err := computeAndStoreRoute(user.ID, uint(groupId), costing, mode)
 	if err != nil {
+		logger.Errorf("OptimizeGroup: %s", err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}

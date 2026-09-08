@@ -10,6 +10,7 @@ import (
 
 	"github.com/MOPDev/mop-backend-api/initializers"
 	"github.com/MOPDev/mop-backend-api/internal"
+	"github.com/MOPDev/mop-backend-api/internal/logger"
 	"github.com/MOPDev/mop-backend-api/internal/tsp"
 	"github.com/MOPDev/mop-backend-api/models"
 	"github.com/gin-gonic/gin"
@@ -36,6 +37,7 @@ func getRouteSetting() (models.RouteSetting, error) {
 func GetRouteSettings(c *gin.Context) {
 	s, err := getRouteSetting()
 	if err != nil {
+		logger.Errorf("GetRouteSettings: get failed: %s", err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -56,6 +58,7 @@ func PatchRouteSettings(c *gin.Context) {
 
 	s, err := getRouteSetting()
 	if err != nil {
+		logger.Errorf("getRouteSettings: get failed: %s", err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -85,6 +88,7 @@ func PatchRouteSettings(c *gin.Context) {
 	}
 
 	if err := initializers.DB.Save(&s).Error; err != nil {
+		logger.Errorf("PatchRouteSettings: save failed: %s", err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -272,6 +276,7 @@ func RecomputeGroupRoute(c *gin.Context) {
 
 	geometry, _, _, overrun, err := computeAndStoreRoute(user.ID, uint(groupId), costing, mode)
 	if err != nil {
+		logger.Errorf("RecomputeGroupRoute: %s", err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}

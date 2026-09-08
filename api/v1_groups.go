@@ -108,6 +108,7 @@ func ChangeGroupId(c *gin.Context) {
 	// (Assuming getVerifyUser or your middleware provides the user object)
 	adminUser, ok := getVerifyUser(c)
 	if !ok {
+		logger.Warn("ChangeGroupId: failed to verify user")
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Unauthorized or session expired"})
 		return
 	}
@@ -230,6 +231,7 @@ func ChangeGroupId(c *gin.Context) {
 func ChangeGroupDate(c *gin.Context) {
 	user, ok := getVerifyUser(c)
 	if !ok {
+		logger.Warn("ChangeGroupDate: failed to verify user")
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "something went wrong doing verifyUser"})
 		return
 	}
@@ -283,6 +285,7 @@ func ChangeGroupDate(c *gin.Context) {
 	})
 
 	if err != nil {
+		logger.Errorf("ChangeGroupDate: %s", err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -292,6 +295,7 @@ func ChangeGroupDate(c *gin.Context) {
 func GetInGroup(c *gin.Context) { // gets all the visits in a given group
 	_, ok := getVerifyUser(c)
 	if !ok {
+		logger.Warn("GetInGroup: failed to verify user")
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "something went wrong doing verifyUser"})
 		return
 	}
@@ -308,6 +312,7 @@ func GetInGroup(c *gin.Context) { // gets all the visits in a given group
 
 	result := initializers.DB.Find(&visits).Where("group_id = ?", uint(groupId))
 	if result.Error != nil {
+		logger.Errorf("GetInGroup: %s", result.Error.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
 		return
 	}
@@ -365,6 +370,7 @@ func RemoveFromGroup(c *gin.Context) {
 	})
 
 	if err != nil {
+		logger.Errorf("RemoveFromGroup: %s", err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -376,6 +382,7 @@ func ChangeKonsulent(c *gin.Context) {
 	// 1. Get current Admin user for logging
 	adminUser, ok := getVerifyUser(c)
 	if !ok {
+		logger.Warn("ChangeKonsulent: failed to verify user")
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Unauthorized"})
 		return
 	}
@@ -442,6 +449,7 @@ func ChangeKonsulent(c *gin.Context) {
 	})
 
 	if err != nil {
+		logger.Errorf("ChangeKonsulent: %s", err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}

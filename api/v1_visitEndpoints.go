@@ -145,6 +145,7 @@ func AvailableVisitBySagsnr(c *gin.Context) {
 
 	results, err := internal.ExecuteQuery(context.Background(), query)
 	if err != nil {
+		logger.Errorf("AvailableVisitBySagsnr query failed: %s", err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "query failed"})
 		return
 	}
@@ -157,6 +158,7 @@ func GetVisits(c *gin.Context) {
 	var users []models.User
 	user, ok := getVerifyUser(c)
 	if !ok {
+		logger.Warn("Visit_responses: failed to verify user")
 		c.JSON(http.StatusInternalServerError, gin.H{})
 	}
 
@@ -183,6 +185,7 @@ func GetVisitTypes(c *gin.Context) {
 func CreatedVisits(c *gin.Context) {
 	_, ok := getVerifyUser(c) //user , ok
 	if !ok {
+		logger.Warn("CreatedVisits: failed to verify user")
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"message": "User could not be found from the token",
 		})
@@ -336,6 +339,7 @@ func Visit_responses(c *gin.Context) {
 func Visit_responses_user(c *gin.Context) {
 	requester, ok := getVerifyUser(c)
 	if !ok {
+		logger.Warn("Visit_responses_user: failed to verify user")
 		c.JSON(http.StatusInternalServerError, gin.H{})
 		return
 	}
@@ -491,6 +495,7 @@ func UploadVisitImage(c *gin.Context) {
 	}
 
 	if err := initializers.DB.Create(&image).Error; err != nil {
+		logger.Errorf("UploadVisitImage: failed to create image record: %s", err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not create database record"})
 		return
 	}
@@ -510,9 +515,11 @@ func UploadVisitImage(c *gin.Context) {
 		// If saving fails, you might want to delete the DB record or handle the error
 		err1 := initializers.DB.Delete(&image).Error
 		if err1 != nil {
+			logger.Errorf("UploadVisitImage: failed to delete image record: %s", err1.Error())
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to Delete record when saving file: " + err.Error()})
 			return
 		}
+		logger.Errorf("UploadVisitImage: failed to save file: %s", err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save file: " + err.Error()})
 		return
 	}
@@ -560,6 +567,7 @@ func UploadAssetImage(c *gin.Context) {
 	finalPath := filepath.Join(uploadDir, newFileName)
 
 	if err := c.SaveUploadedFile(file, finalPath); err != nil {
+		logger.Errorf("UploadAssetImage: failed to save file: %s", err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save file: " + err.Error()})
 		return
 	}
@@ -567,6 +575,7 @@ func UploadAssetImage(c *gin.Context) {
 	asset.ImagePath = finalPath
 	asset.OriginalName = file.Filename
 	if err := initializers.DB.Save(&asset).Error; err != nil {
+		logger.Errorf("UploadAssetImage: failed to update asset: %s", err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not update asset record"})
 		return
 	}
@@ -665,6 +674,7 @@ func GetBesogsbrevHandler(c *gin.Context) {
 
 	fileBytes, err := internal.GetBesogsbrev(visitId)
 	if err != nil {
+		logger.Errorf("GetBesogsbrevHandler: %s", err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -682,6 +692,7 @@ func GetSFHandler(c *gin.Context) {
 
 	fileBytes, err := internal.GetSF(visitId)
 	if err != nil {
+		logger.Errorf("GetSFHandler: %s", err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -836,6 +847,7 @@ func DeleteVisit(c *gin.Context) {
 
 	actinguser, ok := getVerifyUser(c)
 	if !ok {
+		logger.Warn("DeleteVisit: failed to verify acting user")
 		c.JSON(http.StatusInternalServerError, gin.H{})
 		return
 	}
@@ -844,6 +856,7 @@ func DeleteVisit(c *gin.Context) {
 
 	result := initializers.DB.Delete(&visit)
 	if result.Error != nil {
+		logger.Errorf("DeleteVisit: failed to delete: %s", result.Error.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": result.Error.Error(),
 		})

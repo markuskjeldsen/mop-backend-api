@@ -11,6 +11,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/MOPDev/mop-backend-api/internal/logger"
 	"github.com/gin-gonic/gin"
 )
 
@@ -725,12 +726,14 @@ func OptimizeHandler(c *gin.Context) {
 
 	ordered, err := SolveWaypoints(req.Waypoints, req.Costing, req.Mode, req.FixedStart, req.FixedEnd)
 	if err != nil {
+		logger.Errorf("TSP optimize: %s", err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
 	result, err := RouteGeometry(ordered, req.Costing, req.Mode)
 	if err != nil {
+		logger.Errorf("RouteGeometry: %s", err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}

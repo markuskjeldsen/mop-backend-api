@@ -269,12 +269,14 @@ func PlannedVisitsExcel(c *gin.Context) {
 	var visits []models.Visit
 	result := initializers.DB.Preload("User").Preload("Debitors").Where("group_id = ?", groupID).Find(&visits)
 	if result.Error != nil {
+		logger.Errorf("PlannedVisitsExcel: %s", result.Error.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
 		return
 	}
 
 	file, err := excel.GenerateVisitsPlanExcel(visits)
 	if err != nil {
+		logger.Errorf("PlannedVisitsExcel: %s", err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}

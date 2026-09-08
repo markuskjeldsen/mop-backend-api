@@ -57,6 +57,7 @@ func VisitPDF(c *gin.Context) {
 
 	visitID, err := strconv.ParseInt(c.Query("id"), 10, 32)
 	if err != nil {
+		logger.Errorf("VisitPDF: failed to parse id: %s", err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "The id could not be parsed",
 			"err":   err.Error(),
@@ -77,6 +78,7 @@ func VisitPDF(c *gin.Context) {
 
 	pdfBytes, err := internal.GeneratePDFVisit(uint(visitID))
 	if err != nil {
+		logger.Errorf("VisitPDF: PDF generation failed: %s", err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
 			"id":    visitID,

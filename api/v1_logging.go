@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/MOPDev/mop-backend-api/initializers"
+	"github.com/MOPDev/mop-backend-api/internal/logger"
 	"github.com/MOPDev/mop-backend-api/models"
 	"github.com/gin-gonic/gin"
 )
@@ -12,6 +13,7 @@ import (
 func ErrorLog(c *gin.Context) {
 	user, ok := getVerifyUser(c)
 	if !ok {
+		logger.Warn("ErrorLog: failed to verify user")
 		c.JSON(http.StatusInternalServerError, gin.H{})
 		return
 	}
@@ -26,6 +28,7 @@ func ErrorLog(c *gin.Context) {
 
 	currentVal, err := json.Marshal(gin.H{"text": body.Text})
 	if err != nil {
+		logger.Errorf("ErrorLog: failed to encode log: %s", err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to encode log"})
 		return
 	}
@@ -37,6 +40,7 @@ func ErrorLog(c *gin.Context) {
 	}
 
 	if err := initializers.DB.Create(&entry).Error; err != nil {
+		logger.Errorf("ErrorLog: failed to save log: %s", err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to save log"})
 		return
 	}

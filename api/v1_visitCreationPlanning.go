@@ -150,7 +150,7 @@ func VisitCreation(c *gin.Context) {
 		return
 	}
 
-	logger.Infof("Created visits count: %d", len(createdVisits))
+	//logger.Infof("Created visits count: %d", len(createdVisits))
 
 	var createdIDs []uint
 	for _, v := range createdVisits {
@@ -206,6 +206,7 @@ func mergeByGeocode(in []visitData) []visitData {
 func VisitFile(c *gin.Context) {
 	_, ok := getVerifyUser(c)
 	if !ok {
+		logger.Warn("VisitFile: failed to verify user")
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "User could not be found from the token"})
 		return
 	}
@@ -241,6 +242,7 @@ func VisitLetterSent(c *gin.Context) {
 	visitID, err := strconv.ParseInt(id, 10, 32)
 
 	if !ok {
+		logger.Warn("VisitLetterSent: failed to verify user")
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "User could not be found from the token"})
 		return
 	}

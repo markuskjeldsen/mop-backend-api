@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/MOPDev/mop-backend-api/initializers"
+	"github.com/MOPDev/mop-backend-api/internal/logger"
 	"github.com/MOPDev/mop-backend-api/models"
 	"github.com/gin-gonic/gin"
 )
@@ -30,6 +31,7 @@ func GetVisits(c *gin.Context) {
 	var users []models.User
 	user, ok := getVerifyUser(c)
 	if !ok {
+		logger.Warn("api2 GetVisits: failed to verify user")
 		c.JSON(http.StatusInternalServerError, gin.H{})
 	}
 
