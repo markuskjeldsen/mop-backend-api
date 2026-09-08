@@ -68,7 +68,9 @@ func RequireAuthUser(c *gin.Context) {
 			var attempt models.AuthAttempt
 			attempt.IP = c.ClientIP()
 			attempt.FailureReason = "Token does not belong to any user"
-			initializers.DB.Create(&attempt)
+			if result := initializers.DB.Create(&attempt); result.Error != nil {
+				logger.Errorf("failed to log auth attempt: %s", result.Error.Error())
+			}
 			c.AbortWithStatus(http.StatusUnauthorized)
 			return
 		}
@@ -122,7 +124,9 @@ func RequireAuthOfficeWorker(c *gin.Context) {
 			var attempt models.AuthAttempt
 			attempt.IP = c.ClientIP()
 			attempt.FailureReason = "Token does not belong to any user"
-			initializers.DB.Create(&attempt)
+			if result := initializers.DB.Create(&attempt); result.Error != nil {
+				logger.Errorf("failed to log auth attempt: %s", result.Error.Error())
+			}
 			c.AbortWithStatus(http.StatusUnauthorized)
 			return
 		}
@@ -181,7 +185,9 @@ func RequireAuthAuditor(c *gin.Context) {
 			var attempt models.AuthAttempt
 			attempt.IP = c.ClientIP()
 			attempt.FailureReason = "Token does not belong to any user"
-			initializers.DB.Create(&attempt)
+			if result := initializers.DB.Create(&attempt); result.Error != nil {
+				logger.Errorf("failed to log auth attempt: %s", result.Error.Error())
+			}
 			c.AbortWithStatus(http.StatusUnauthorized)
 			return
 		}
@@ -241,7 +247,9 @@ func RequireAuthAdmin(c *gin.Context) {
 			var attempt models.AuthAttempt
 			attempt.IP = c.ClientIP()
 			attempt.FailureReason = "Token does not belong to any user"
-			initializers.DB.Create(&attempt)
+			if result := initializers.DB.Create(&attempt); result.Error != nil {
+				logger.Errorf("failed to log auth attempt: %s", result.Error.Error())
+			}
 			c.AbortWithStatus(http.StatusUnauthorized)
 			return
 		}

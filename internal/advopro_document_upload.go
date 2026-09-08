@@ -165,7 +165,9 @@ func ImportDocument(srcFilePath, title string, sagsnr uint64, empID int, user, d
 
 	cleanupFile := func() {
 		if _, statErr := os.Stat(localDest); statErr == nil {
-			_ = os.Remove(localDest)
+			if rmErr := os.Remove(localDest); rmErr != nil {
+				logger.Errorf("failed to remove temp file %s: %s", localDest, rmErr.Error())
+			}
 		}
 	}
 
@@ -186,7 +188,9 @@ func ImportDocument(srcFilePath, title string, sagsnr uint64, empID int, user, d
 
 	// rollback on any error path
 	rollback := func(cause error) (*ImportResult, error) {
-		_ = tx.Rollback()
+		if rbErr := tx.Rollback(); rbErr != nil {
+			logger.Errorf("failed to rollback document import: %s", rbErr.Error())
+		}
 		cleanupFile()
 		return nil, cause
 	}
@@ -260,7 +264,9 @@ func ImportDocument(srcFilePath, title string, sagsnr uint64, empID int, user, d
 	}
 
 	if dryRun {
-		_ = tx.Rollback()
+		if rbErr := tx.Rollback(); rbErr != nil {
+			logger.Errorf("failed to rollback dry-run document import: %s", rbErr.Error())
+		}
 		cleanupFile()
 		logger.Infof("[DRY RUN] DB inserts rolled back. IDs would be: %d, %d, %d",
 			dokID, versionID, forsendelseID)
@@ -290,17 +296,23 @@ func copyFile(src, dst string) error {
 
 	if _, err := io.Copy(out, in); err != nil {
 		out.Close()
-		_ = os.Remove(dst)
+		if rmErr := os.Remove(dst); rmErr != nil {
+			logger.Errorf("failed to remove partial file %s: %s", dst, rmErr.Error())
+		}
 		return err
 	}
 	if err := out.Close(); err != nil {
-		_ = os.Remove(dst)
+		if rmErr := os.Remove(dst); rmErr != nil {
+			logger.Errorf("failed to remove file after close error %s: %s", dst, rmErr.Error())
+		}
 		return err
 	}
 
 	// best-effort: preserve modification time (shutil.copy2 behavior)
 	if fi, statErr := os.Stat(src); statErr == nil {
-		_ = os.Chtimes(dst, time.Now(), fi.ModTime())
+		if ctErr := os.Chtimes(dst, time.Now(), fi.ModTime()); ctErr != nil {
+			logger.Warnf("failed to preserve mod time for %s: %s", dst, ctErr.Error())
+		}
 	}
 	return nil
 }

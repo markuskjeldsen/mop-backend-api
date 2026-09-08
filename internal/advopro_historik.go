@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"log"
 	"os"
 	"time"
 
@@ -165,7 +164,7 @@ func QueryHistorik(sagsnr int, includeDeleted bool) ([]Historik, error) {
 		results = append(results, mapToHistorik(row))
 	}
 
-	log.Printf("Found %d historik entries for Sagsnr %d", len(results), sagsnr)
+	logger.Infof("Found %d historik entries for Sagsnr %d", len(results), sagsnr)
 	return results, nil
 }
 
@@ -245,7 +244,9 @@ func InsertHistorik(p InsertHistorikParams) (int, error) {
 	}
 	defer func() {
 		if tx != nil {
-			_ = tx.Rollback()
+			if rbErr := tx.Rollback(); rbErr != nil {
+				logger.Errorf("failed to rollback historik insert: %s", rbErr.Error())
+			}
 		}
 	}()
 
@@ -269,7 +270,9 @@ func InsertHistorik(p InsertHistorikParams) (int, error) {
 
 	if p.DryRun {
 		logger.Infof("[DRY RUN] Would have inserted HistorikId %d. Rolling back.", newID)
-		_ = tx.Rollback()
+		if rbErr := tx.Rollback(); rbErr != nil {
+			logger.Errorf("failed to rollback dry-run insert: %s", rbErr.Error())
+		}
 		tx = nil
 		return newID, nil
 	}
@@ -383,8 +386,8 @@ func UpdateHistorik(historikId int, expectedTekst string, updates UpdateHistorik
 	if dryRun {
 		dryRunPrefix = "[DRY RUN] "
 	}
-	log.Printf("%sExecuting: %s", dryRunPrefix, query)
-	log.Printf("%sParams: %v", dryRunPrefix, params)
+	logger.Infof("%sExecuting: %s", dryRunPrefix, query)
+	logger.Infof("%sParams: %v", dryRunPrefix, params)
 
 	db, err := openDB(Server, AdvoPro)
 	if err != nil {
@@ -398,7 +401,9 @@ func UpdateHistorik(historikId int, expectedTekst string, updates UpdateHistorik
 	}
 	defer func() {
 		if tx != nil {
-			_ = tx.Rollback()
+			if rbErr := tx.Rollback(); rbErr != nil {
+				logger.Errorf("failed to rollback historik update: %s", rbErr.Error())
+			}
 		}
 	}()
 
@@ -407,11 +412,16 @@ func UpdateHistorik(historikId int, expectedTekst string, updates UpdateHistorik
 		return false, fmt.Errorf("update failed: %w", err)
 	}
 
-	rowsAffected, _ := result.RowsAffected()
+	rowsAffected, rowsErr := result.RowsAffected()
+	if rowsErr != nil {
+		logger.Errorf("failed to read rows affected for historik update: %s", rowsErr.Error())
+	}
 
 	if dryRun {
-		log.Printf("[DRY RUN] Would have updated %d row(s). Rolling back.", rowsAffected)
-		_ = tx.Rollback()
+		logger.Infof("[DRY RUN] Would have updated %d row(s). Rolling back.", rowsAffected)
+		if rbErr := tx.Rollback(); rbErr != nil {
+			logger.Errorf("failed to rollback dry-run update: %s", rbErr.Error())
+		}
 		tx = nil
 		return true, nil
 	}
@@ -421,7 +431,7 @@ func UpdateHistorik(historikId int, expectedTekst string, updates UpdateHistorik
 	}
 	tx = nil
 
-	log.Printf("Updated %d row(s). Committed.", rowsAffected)
+	logger.Infof("Updated %d row(s). Committed.", rowsAffected)
 	return true, nil
 }
 
@@ -443,7 +453,7 @@ func DeleteHistorik(historikId int, expectedTekst, deletedBy string, dryRun bool
 		)
 	}
 	if current.Slettet != nil {
-		log.Printf("Warning: HistorikId %d is already deleted", historikId)
+		logger.Warnf("Warning: HistorikId %d is already deleted", historikId)
 		return false, nil
 	}
 
@@ -456,7 +466,7 @@ func DeleteHistorik(historikId int, expectedTekst, deletedBy string, dryRun bool
 	if dryRun {
 		dryRunPrefix = "[DRY RUN] "
 	}
-	log.Printf("%sSoft-deleting HistorikId %d", dryRunPrefix, historikId)
+	logger.Infof("%sSoft-deleting HistorikId %d", dryRunPrefix, historikId)
 
 	db, err := openDB(Server, AdvoPro)
 	if err != nil {
@@ -470,7 +480,9 @@ func DeleteHistorik(historikId int, expectedTekst, deletedBy string, dryRun bool
 	}
 	defer func() {
 		if tx != nil {
-			_ = tx.Rollback()
+			if rbErr := tx.Rollback(); rbErr != nil {
+				logger.Errorf("failed to rollback historik delete: %s", rbErr.Error())
+			}
 		}
 	}()
 
@@ -484,11 +496,16 @@ func DeleteHistorik(historikId int, expectedTekst, deletedBy string, dryRun bool
 		return false, fmt.Errorf("delete failed: %w", err)
 	}
 
-	rowsAffected, _ := result.RowsAffected()
+	rowsAffected, rowsErr := result.RowsAffected()
+	if rowsErr != nil {
+		logger.Errorf("failed to read rows affected for historik delete: %s", rowsErr.Error())
+	}
 
 	if dryRun {
-		log.Printf("[DRY RUN] Would have deleted HistorikId %d (%d row(s)). Rolling back.", historikId, rowsAffected)
-		_ = tx.Rollback()
+		logger.Infof("[DRY RUN] Would have deleted HistorikId %d (%d row(s)). Rolling back.", historikId, rowsAffected)
+		if rbErr := tx.Rollback(); rbErr != nil {
+			logger.Errorf("failed to rollback dry-run delete: %s", rbErr.Error())
+		}
 		tx = nil
 		return true, nil
 	}
@@ -498,7 +515,7 @@ func DeleteHistorik(historikId int, expectedTekst, deletedBy string, dryRun bool
 	}
 	tx = nil
 
-	log.Printf("Soft-deleted HistorikId %d. Committed.", historikId)
+	logger.Infof("Soft-deleted HistorikId %d. Committed.", historikId)
 	return true, nil
 }
 
@@ -524,7 +541,6 @@ func AddNoteToAdvopro(visit models.Visit) bool {
 	})
 	if err != nil {
 		logger.Errorf("Note insert failed %s", err.Error())
-		log.Fatalf("Insert failed: %v", err)
 	}
 	//logger.Infof("Would have inserted HistorikId: %d", newID)
 
@@ -550,53 +566,3 @@ func UpdateBehandlingskodeText(additionalText string) bool {
 	logger.Info(text)
 	return true
 }
-
-/*
-func main() {
-    server := "MOPSRV01\\SQL1"
-    database := "AdvoPro"
-    sagsnr := 430415
-
-    // --- Query all historik ---
-    entries, err := QueryHistorik(server, database, sagsnr, false)
-    if err != nil {
-        log.Fatalf("Query failed: %v", err)
-    }
-    for _, h := range entries {
-        logger.Printf("HistorikId=%d Tekst=%q\n", h.HistorikId, h.Tekst)
-    }
-
-    // --- Insert (dry run) ---
-    newID, err := InsertHistorik(server, database, InsertHistorikParams{
-        Sagsnr:        sagsnr,
-        Tekst:         "Besøgs notat",
-        Noter:         "Notat indhold her...",
-        Medarbejdernr: 185,
-        OprettetAf:    `MOP\mkk`,
-        DryRun:        true, // flip to false when ready
-    })
-    if err != nil {
-        log.Fatalf("Insert failed: %v", err)
-    }
-    logger.Printf("Would have inserted HistorikId: %d\n", newID)
-
-    // --- Update (dry run) ---
-    tekst := "Updated tekst"
-    ok, err := UpdateHistorik(server, database, 2321092, "Old tekst", UpdateHistorikParams{
-        Tekst: &tekst,
-    }, true)
-    if err != nil {
-        log.Fatalf("Update failed: %v", err)
-    }
-    logger.Printf("Update applied: %v\n", ok)
-
-    // --- Soft delete (dry run) ---
-    ok, err = DeleteHistorik(server, database, 2321092, "Old tekst", `MOP\mkk`, true)
-    if err != nil {
-        log.Fatalf("Delete failed: %v", err)
-    }
-    logger.Printf("Delete applied: %v\n", ok)
-}
-
-
-*/

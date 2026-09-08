@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/MOPDev/mop-backend-api/initializers"
+	"github.com/MOPDev/mop-backend-api/internal/logger"
 	"github.com/MOPDev/mop-backend-api/models"
 	"github.com/gin-gonic/gin"
 	"github.com/oschwald/geoip2-golang"
@@ -60,12 +61,16 @@ func LoginAttemptLog(c *gin.Context) {
 
 	if isRateLimited(initializers.DB, body.Username, addr) {
 		attempt.FailureReason = "Too many requests"
-		initializers.DB.Create(&attempt)
+		if result := initializers.DB.Create(&attempt); result.Error != nil {
+			logger.Errorf("failed to log rate-limited login attempt: %s", result.Error.Error())
+		}
 		c.AbortWithStatus(http.StatusTooManyRequests)
 		return
 	}
 
-	initializers.DB.Create(&attempt)
+	if result := initializers.DB.Create(&attempt); result.Error != nil {
+		logger.Errorf("failed to log login attempt: %s", result.Error.Error())
+	}
 	c.Set("attemptID", attempt.ID)
 	attempt.FailureReason = "Failed to bind values"
 	c.Next()

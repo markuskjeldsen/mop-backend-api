@@ -10,6 +10,7 @@ import (
 
 	"github.com/MOPDev/mop-backend-api/initializers"
 	"github.com/MOPDev/mop-backend-api/internal"
+	"github.com/MOPDev/mop-backend-api/internal/logger"
 	"github.com/MOPDev/mop-backend-api/models"
 	"github.com/gin-gonic/gin"
 )
@@ -224,11 +225,18 @@ func ReviewedVisit(c *gin.Context) {
 			break
 		}
 	}
+	var errStrings []string
+	for _, err := range iErrs {
+		errStrings = append(errStrings, err.Err)
+	}
+	ErrString := strings.Join(errStrings, ", ")
 
 	if allFailed {
+		logger.Errorf("Every review failed %s", ErrString)
 		c.JSON(http.StatusInternalServerError, iErrs)
 		return
 	}
 
+	logger.Errorf("some review failed %s", ErrString)
 	c.JSON(http.StatusOK, iErrs)
 }

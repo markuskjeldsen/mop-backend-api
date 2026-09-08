@@ -54,7 +54,9 @@ func LogUserDelete(actinguser models.User, targetuser models.User) error {
 		ActionType:   "DELETE USER",
 		PrevVal:      prevJSON,
 	}
-	initializers.DB.Create(&activity)
+	if result := initializers.DB.Create(&activity); result.Error != nil {
+		logger.Errorf("failed to log user delete: %s", result.Error.Error())
+	}
 	return nil
 }
 
@@ -71,7 +73,9 @@ func LogUserCreate(actinguser models.User, targetuser models.User) error {
 		ActionType:   "CREATE USER",
 	}
 
-	initializers.DB.Create(&activity)
+	if result := initializers.DB.Create(&activity); result.Error != nil {
+		logger.Errorf("failed to log user create: %s", result.Error.Error())
+	}
 	return nil
 }
 
@@ -95,7 +99,9 @@ func LogUserPatch(actinguser models.User, targetuserPrev models.User, targetuser
 		ActionType: "PATCH USER",
 	}
 
-	initializers.DB.Create(&activity)
+	if result := initializers.DB.Create(&activity); result.Error != nil {
+		logger.Errorf("failed to log user patch: %s", result.Error.Error())
+	}
 	return nil
 }
 
@@ -112,7 +118,9 @@ func LogVisitDelete(actinguser models.User, targetVisit models.Visit) error {
 		PrevVal:      prevJSON,
 	}
 
-	initializers.DB.Create(&activity)
+	if result := initializers.DB.Create(&activity); result.Error != nil {
+		logger.Errorf("failed to log visit delete: %s", result.Error.Error())
+	}
 	return nil
 }
 
@@ -129,7 +137,9 @@ func LogVisitCreate(actinguser models.User, targetVisit models.Visit) error {
 		ActionType:   "CREATE VISIT",
 	}
 
-	initializers.DB.Create(&activity)
+	if result := initializers.DB.Create(&activity); result.Error != nil {
+		logger.Errorf("failed to log visit create: %s", result.Error.Error())
+	}
 	return nil
 }
 

@@ -37,7 +37,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"mime/multipart"
 	"net/http"
 	"os"
@@ -517,7 +516,7 @@ WaitLoop:
 			cf, newTok, err := fetchCaseFileStatus(accessToken, caseFileID, true)
 			accessToken = newTok
 			if err != nil {
-				log.Printf("[penneo] poll err %s: %v", caseFileID, err)
+				logger.Errorf("[penneo] poll err %s: %v", caseFileID, err)
 				continue
 			}
 			status = cf.Status
@@ -537,7 +536,7 @@ WaitLoop:
 			}
 
 		case <-timeout:
-			log.Printf("[penneo] timeout waiting %s", caseFileID)
+			logger.Infof("[penneo] timeout waiting for %s", caseFileID)
 			hub.Notify(caseFileID, `{"status":"timeout"}`)
 			return
 		}
@@ -567,14 +566,14 @@ WaitLoop:
 	cf, newTok, err := fetchCaseFileStatus(accessToken, caseFileID, true)
 	accessToken = newTok
 	if err != nil || len(cf.Documents) == 0 {
-		log.Printf("[penneo] fetch docs failed %s: %v", caseFileID, err)
+		logger.Errorf("[penneo] fetch docs failed %s: %v", caseFileID, err)
 		hub.Notify(caseFileID, `{"status":"error","message":"fetch documents failed"}`)
 		return
 	}
 
 	pdfBytes, err := getSignedDocument(accessToken, cf.Documents[0].ID)
 	if err != nil {
-		log.Printf("[penneo] get pdf failed %s: %v", caseFileID, err)
+		logger.Errorf("[penneo] get pdf failed %s: %v", caseFileID, err)
 		hub.Notify(caseFileID, `{"status":"error","message":"get pdf failed"}`)
 		return
 	}
@@ -593,18 +592,21 @@ WaitLoop:
 func StartPenneoFlow(c *gin.Context) {
 	tokenResp, err := getAccessToken()
 	if err != nil {
+		logger.Errorf("[Penneo] AccessToken error %s", err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "token", "details": err.Error()})
 		return
 	}
 
 	jobState, err := sendCaseFile(tokenResp.AccessToken)
 	if err != nil {
+		logger.Errorf("[Penneo] sendCaseFile error %s", err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "send casefile", "details": err.Error()})
 		return
 	}
 
 	caseFileID, err := pollJobStatus(jobState)
 	if err != nil {
+		logger.Errorf("[Penneo] pollJobStatus error %s", err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "poll job", "details": err.Error()})
 		return
 	}
@@ -623,6 +625,7 @@ func StartPenneoFlow(c *gin.Context) {
 func PenneoWebhook(c *gin.Context) {
 	body, err := io.ReadAll(c.Request.Body)
 	if err != nil {
+		logger.Errorf("[Penneo] PenneoWebhook body read error %s", err.Error())
 		c.JSON(http.StatusBadRequest, gin.H{"error": "read body"})
 		return
 	}
@@ -642,11 +645,12 @@ func PenneoWebhook(c *gin.Context) {
 
 	var ev PenneoWebhookEvent
 	if err := json.Unmarshal(body, &ev); err != nil {
+		logger.Errorf("[Penneo] bad json error %s", err.Error())
 		c.JSON(http.StatusBadRequest, gin.H{"error": "bad json"})
 		return
 	}
 
-	log.Printf("[penneo webhook] %s for %s", ev.EventType, ev.CaseFileID)
+	logger.Infof("[penneo webhook] %s for %s", ev.EventType, ev.CaseFileID)
 
 	if ev.EventType == "sign.casefile.completed" {
 		pending.SignalSigned(ev.CaseFileID)
@@ -659,6 +663,7 @@ func PenneoWebhook(c *gin.Context) {
 func PenneoSSE(c *gin.Context) {
 	caseFileID := c.Param("caseFileId")
 	if caseFileID == "" {
+		logger.Info("[Penneo] missing caseFileId")
 		c.JSON(http.StatusBadRequest, gin.H{"error": "missing caseFileId"})
 		return
 	}
@@ -673,6 +678,7 @@ func PenneoSSE(c *gin.Context) {
 
 	flusher, ok := c.Writer.(http.Flusher)
 	if !ok {
+		logger.Error("[Penneo] streaming unsupported error")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "streaming unsupported"})
 		return
 	}

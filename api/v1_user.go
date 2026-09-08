@@ -24,9 +24,10 @@ func Hello(c *gin.Context) {
 
 func GetUser(c *gin.Context) {
 	user, _ := getVerifyUser(c)
-	//var user []models.User
-	initializers.DB.Find(&user, user.ID) // Preload visits for each user
-	user.Password = ""                   // Remove password from the response
+	if err := initializers.DB.Find(&user, user.ID).Error; err != nil {
+		logger.Errorf("failed to find user %d: %s", user.ID, err.Error())
+	}
+	user.Password = "" // Remove password from the response
 
 	c.JSON(200, gin.H{
 		"user": user,
@@ -36,15 +37,18 @@ func GetUserByParam(c *gin.Context) {
 	user, _ := getVerifyUser(c)
 	id := c.Param("id")
 
-	//var user []models.User
-	initializers.DB.Find(&user, id) // Preload visits for each user
-	user.Password = ""              // Remove password from the response
+	if err := initializers.DB.Find(&user, id).Error; err != nil {
+		logger.Errorf("failed to find user by param %s: %s", id, err.Error())
+	}
+	user.Password = "" // Remove password from the response
 
 	c.JSON(200, user)
 }
 func GetUsers(c *gin.Context) {
 	var user []models.User
-	initializers.DB.Where("id != 1").Find(&user) // Preload visits for each user
+	if err := initializers.DB.Where("id != 1").Find(&user).Error; err != nil {
+		logger.Errorf("failed to list users: %s", err.Error())
+	}
 	for i := range user {
 		user[i].Password = "" // Remove password from the response
 	}
@@ -307,7 +311,8 @@ func Patch(c *gin.Context) {
 
 	// Update the user fields
 	if err := initializers.DB.Model(&user).Updates(updates).Error; err != nil {
-		c.JSON(500, gin.H{"error": "Failed to update user"})
+		logger.Errorf("User patch db update %s", err.Error())
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update user"})
 		return
 	}
 
@@ -326,8 +331,11 @@ func DeleteUser(c *gin.Context) {
 		return
 	}
 
-	initializers.DB.Find(&user, id)
+	if err := initializers.DB.Find(&user, id).Error; err != nil {
+		logger.Errorf("failed to find user for deletion %s: %s", id, err.Error())
+	}
 	if err := initializers.DB.Delete(&models.User{}, id).Error; err != nil {
+		logger.Errorf("User delete db %s", err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -355,6 +363,7 @@ func ChangePassword(c *gin.Context) {
 	}
 
 	if err := initializers.DB.First(&user, id).Error; err != nil {
+		logger.Errorf("User change password db %s", err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -376,6 +385,7 @@ func ChangePassword(c *gin.Context) {
 	// calculate the hash
 	hash, err := bcrypt.GenerateFromPassword([]byte(body.NewPassword), 14)
 	if err != nil {
+		logger.Errorf("User change password GenerateFromPassword %s", err.Error())
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status": "couldnt generate password hash",
 			"error":  err.Error(),
@@ -387,6 +397,7 @@ func ChangePassword(c *gin.Context) {
 	// assign hash to user.password and merge with database
 	result := initializers.DB.Model(&user).Update("password", string(hash))
 	if result.Error != nil {
+		logger.Errorf("assign hash to user.password %s", result.Error.Error())
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status": "Error with Database",
 			"error":  result.Error.Error(),

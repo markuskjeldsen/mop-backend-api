@@ -2,7 +2,6 @@ package api
 
 import (
 	"fmt"
-	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -65,7 +64,7 @@ func VisitCreation(c *gin.Context) {
 
 	advoDataMap, err := internal.FetchBulkCaseData(sagsIds)
 	if err != nil {
-		log.Println("Error fetching bulk case data:", err)
+		logger.Errorf("failed to fetch bulk case data: %s", err.Error())
 	}
 
 	var createdVisits []models.Visit
@@ -159,7 +158,9 @@ func VisitCreation(c *gin.Context) {
 	}
 
 	var fullyLoadedVisits []models.Visit
-	initializers.DB.Preload("Debitors").Where("id IN ?", createdIDs).Find(&fullyLoadedVisits)
+	if err := initializers.DB.Preload("Debitors").Where("id IN ?", createdIDs).Find(&fullyLoadedVisits).Error; err != nil {
+		logger.Errorf("failed to load created visits for audit log: %s", err.Error())
+	}
 
 	for _, object := range fullyLoadedVisits {
 		internal.LogVisitCreate(user, object)
@@ -219,10 +220,18 @@ func VisitFile(c *gin.Context) {
 	}
 
 	var visits []models.Visit
-	// Efficiently fetch all visits at once
-	initializers.DB.Preload("Debitors").Where("id IN ?", planData.VisitIds).Find(&visits)
+	if err := initializers.DB.Preload("Debitors").Where("id IN ?", planData.VisitIds).Find(&visits).Error; err != nil {
+		logger.Errorf("failed to load visits for excel: %s", err.Error())
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to load visits"})
+		return
+	}
 
-	f, _ := excel.GenerateVisitsExcel(visits)
+	f, err := excel.GenerateVisitsExcel(visits)
+	if err != nil {
+		logger.Errorf("failed to generate excel: %s", err.Error())
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to generate excel"})
+		return
+	}
 	excel.SendExcelResponse(c, f, "plan_visits.xlsx")
 }
 
