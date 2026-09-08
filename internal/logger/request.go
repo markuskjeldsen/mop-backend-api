@@ -27,7 +27,11 @@ func RequestLogger() gin.HandlerFunc {
 		path := c.Request.URL.Path
 
 		// remove the logging on specific paths
-		if strings.HasPrefix(path, "/api/v1/tiles") || strings.HasPrefix(path, "/api/v1/geocode") {
+		// c.Set("geoblocked", true)
+
+		geoblock, _ := c.Get("geoblocked")
+		skip, _ := geoblock.(bool)
+		if strings.HasPrefix(path, "/api/v1/tiles") || strings.HasPrefix(path, "/api/v1/geocode") || skip {
 			c.Next()
 			return
 		}
